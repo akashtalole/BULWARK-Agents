@@ -105,8 +105,9 @@ configured under **Connection** in the sidebar (`http://localhost:8080` +
 from [Path 1](#path-1-local-in-memory-no-cloud-project) (or Docker/Cloud
 Run) already running -- the dashboard is a client, it has no server of
 its own beyond Vite's dev server / a static file host in production. See
-[`frontend/README.md`](../frontend/README.md) for the production build
-and CORS configuration when the dashboard is deployed to its own origin.
+[`frontend/README.md`](https://github.com/akashtalole/BULWARK-Agents/blob/main/frontend/README.md)
+for the production build and CORS configuration when the dashboard is
+deployed to its own origin.
 
 ## Configuring Gemini credentials
 
