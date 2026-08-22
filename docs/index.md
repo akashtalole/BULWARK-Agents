@@ -83,7 +83,7 @@ for the Devpost submission text.
 |---|---|---|
 | Innovation & Operational Utility | 40% | The fleet acts autonomously end-to-end (screens → extracts → cross-references → decides → tickets, with no human in the loop unless a mandatory gate fires); Contract Intelligence, Concentration Analyzer, Framework Crosswalk, the Offboarding Agent, Executive Risk Digest, and the risk-trend early-warning signal solve real, underserved enterprise pain (manual contract review, hidden portfolio concentration risk, redundant cross-framework evidence collection, untracked data-deletion obligations, 30+ endpoints nobody has time to click through, reactive-only risk detection) rather than adding checklist coverage -- see "Beyond the spec" in [Architecture](architecture.md) |
 | Architectural Discipline & Tech Stack | 30% | Event-driven decoupling (`tests/test_orchestrator_wiring.py` asserts no agent module imports another), zero-trust identity, a real circuit breaker sharing code with the kill switch, compensating-action rollback, citation-validated anti-hallucination gates -- see "Mechanisms worth reading in the code directly" in [Architecture](architecture.md) |
-| Demo & Production Readiness | 30% | 144 passing tests requiring zero live credentials (`PYTHONPATH=src pytest -q`), a one-command local spin-up, `deploy/setup_gcp.sh` + `deploy/deploy_cloud_run.sh` for real Cloud Run deployment, and [Demo Video Script](demo_video_script.md) for the required demo video |
+| Demo & Production Readiness | 30% | 146 passing tests requiring zero live credentials (`PYTHONPATH=src pytest -q`), a one-command local spin-up, `deploy/setup_gcp.sh` + `deploy/deploy_cloud_run.sh` for real Cloud Run deployment, and [Demo Video Script](demo_video_script.md) for the required demo video |
 
 ## What it does
 
@@ -239,7 +239,7 @@ src/bulwark/
                  records + assessment snapshots + tenants + offboarding records + digests), memory_bank, auth
   api/           FastAPI routes + schemas (38 routes -- see architecture.md's API surface table)
   main.py        ASGI entrypoint (Cloud Run / uvicorn)
-tests/           144 tests, no live Gemini credentials required
+tests/           146 tests, no live Gemini credentials required
 deploy/          setup_gcp.sh, deploy_cloud_run.sh
 docs/            architecture.md (diagram + agent table + event table + API surface + mechanisms)
                  + DIAGRAMS.md (HLD/LLD/DFD/ERD/sequence/state/deployment diagrams, all Mermaid)

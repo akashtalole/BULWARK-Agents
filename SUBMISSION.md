@@ -104,8 +104,13 @@ Scheduler drives the two sweep cadences.
 ## Challenges we ran into
 
 - Keeping the fleet genuinely event-driven under load-bearing scrutiny --
-  `tests/test_orchestrator_wiring.py` asserts mechanically that no agent
-  module imports another, not just that the diagram says so.
+  `tests/test_architecture_invariants.py` AST-scans every agent module
+  and mechanically fails if one imports another agent module's plain
+  function directly, not just diagrams the invariant and hopes it holds.
+  It caught a real regression during development (Drift Sentinel had
+  started importing Offboarding's overdue-check function directly); the
+  fix moved that composition into `agents/orchestrator.py`, the one file
+  that's allowed to know about every agent.
 - Making the kill switch and the circuit breaker share one code path
   (`set_global_autonomy(0)`) instead of two flags that could silently
   disagree about whether the fleet is allowed to act.
@@ -136,7 +141,7 @@ Scheduler drives the two sweep cadences.
   tested code, with an honest "what's live vs. what's documented" table
   in the README rather than implying broader GCP bindings than a
   hackathon build actually has.
-- 144 passing tests requiring zero live Gemini credentials -- every
+- 146 passing tests requiring zero live Gemini credentials -- every
   deterministic mechanism (guardrails, citation validation, the autonomy
   ladder, the event bus's DLQ and idempotency dedup, the circuit
   breaker, rollback, the crosswalk lookup, the trend detector, the

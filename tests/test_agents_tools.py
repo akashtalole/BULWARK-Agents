@@ -672,7 +672,12 @@ async def test_reopen_assessment_does_not_clobber_offboarding_status():
     assert result["status"] == "offboarding"
 
 
-def test_run_drift_sweep_surfaces_offboarding_overdue_signal():
+def test_run_drift_sweep_does_not_include_offboarding_signals_itself():
+    """drift_sentinel.run_drift_sweep must not import agents/offboarding.py
+    -- that composition happens in agents/orchestrator.py's run_drift_sweep
+    instead (see tests/test_architecture_invariants.py and
+    tests/test_orchestrator_wiring.py::test_run_drift_sweep_surfaces_offboarding_overdue_signal
+    for the orchestrator-level version of this behavior)."""
     from bulwark.platform.models import OffboardingRecord, offboarding_record_repo
 
     vendor = vendor_repo.get_or_create("acme-eu", "Sweep Overdue Co")
@@ -685,11 +690,7 @@ def test_run_drift_sweep_surfaces_offboarding_overdue_signal():
     )
 
     sweep = run_drift_sweep("trace_off_sweep")
-    matching = [
-        s for s in sweep["signals"]
-        if s["vendor_id"] == vendor.vendor_id and s["signal_type"] == "offboarding_overdue"
-    ]
-    assert matching
+    assert not any(s["signal_type"] == "offboarding_overdue" for s in sweep["signals"])
 
 
 # ----------------------------------------------------------- executive digest

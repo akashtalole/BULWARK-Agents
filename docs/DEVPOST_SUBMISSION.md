@@ -2,7 +2,7 @@
 
 Copy/paste each section directly into the matching Devpost form field.
 Everything below is grounded in what's actually in this repository (12
-agents, 144 tests, 38 API routes) — no claim outruns the code.
+agents, 146 tests, 38 API routes) — no claim outruns the code.
 
 ---
 
@@ -86,7 +86,8 @@ Gemini-Pro-backed for the one genuinely complex judgment call, four
 deliberately non-LLM because their job is a lookup, not reasoning)
 wired together entirely through a Pub/Sub-shaped event bus — no agent
 module ever calls another agent module directly, which
-`tests/test_orchestrator_wiring.py` asserts mechanically. Every
+`tests/test_architecture_invariants.py` AST-scans and asserts
+mechanically on every test run. Every
 Fortified Enterprise Fleet pillar from the track brief is implemented
 as real, tested code rather than a diagram: Agent Registry, Agent
 Runtime (ADK `Runner`s + run checkpointing), Memory Bank (per-vendor
@@ -105,8 +106,13 @@ bus when live.
 ## Challenges we ran into
 
 - Keeping the fleet genuinely event-driven under load-bearing scrutiny
-  — a test asserts mechanically that no agent module imports another,
-  not just that the diagram says so.
+  — `tests/test_architecture_invariants.py` AST-scans every agent module
+  and mechanically fails if one imports another, not just diagrams the
+  invariant and hopes it holds. It caught a real regression during
+  development (Drift Sentinel had started importing Offboarding's
+  overdue-check function directly); the fix moved that composition into
+  `agents/orchestrator.py`, the one file allowed to know about every
+  agent.
 - Making the kill switch and the circuit breaker share one code path
   (`set_global_autonomy(0)`) instead of two flags that could silently
   disagree about whether the fleet is allowed to act.
@@ -138,7 +144,7 @@ bus when live.
   tested code, with an honest "what's live vs. what's documented" table
   rather than implying broader GCP bindings than a hackathon build
   actually has.
-- 144 passing tests requiring zero live Gemini credentials — every
+- 146 passing tests requiring zero live Gemini credentials — every
   deterministic mechanism (guardrails, citation validation, the
   autonomy ladder, the event bus's DLQ and idempotency dedup, the
   circuit breaker, rollback, the crosswalk lookup, the trend detector,
@@ -208,7 +214,7 @@ pip install pytest pytest-asyncio httpx  # dev/test only
 PYTHONPATH=src pytest -q
 ```
 
-144 tests, zero live Gemini credentials required — every deterministic
+146 tests, zero live Gemini credentials required — every deterministic
 mechanism (guardrails, citation validation, the autonomy ladder, the
 event bus's DLQ/idempotency, the circuit breaker, rollback, both
 deterministic agents' detection logic) is exercised directly against

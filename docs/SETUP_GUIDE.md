@@ -81,7 +81,7 @@ curl -s -H 'X-API-Key: demo-key' http://localhost:8080/vendors | jq
 PYTHONPATH=src pytest -q
 ```
 
-144 tests, none requiring live Gemini credentials -- every deterministic
+146 tests, none requiring live Gemini credentials -- every deterministic
 piece (guardrails, citation validation, the autonomy ladder, event-bus
 DLQ/idempotency, the circuit breaker, rollback, the crosswalk lookup,
 risk-trend detection, offboarding-deadline tracking) is exercised

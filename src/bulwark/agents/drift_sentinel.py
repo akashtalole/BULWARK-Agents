@@ -4,17 +4,26 @@ weeks-of-state component the Fortified Enterprise Fleet track explicitly
 asks for.
 
 Signal *detection* is deterministic (``run_drift_sweep``): artifact
-expiry, evidence drift, a mock breach feed -- predictively, a
+expiry, evidence drift, a mock breach feed, and -- predictively -- a
 control's residual risk rising for three consecutive reassessments
 (``AssessmentSnapshot``'s append-only history is what makes that
 possible; ``Finding`` alone only ever shows current state, never the
-trajectory), and an overdue offboarding data-deletion deadline
-(``agents/offboarding.py``) are all plain comparisons, not reasoning. What needs an LLM
+trajectory) are all plain comparisons, not reasoning. What needs an LLM
 is *judgment* -- given several raw signals across a vendor, how severe is
 this really, does an active negotiated exception in Memory Bank already
 cover it, and what's the one-paragraph "why this matters" a human
 reviewer should see. That split (deterministic facts in, LLM synthesis
 out) is the same shape used by Risk Assessor.
+
+A fifth signal -- an overdue offboarding data-deletion deadline -- is
+detected by a different agent (``agents/offboarding.py``'s
+``check_offboarding_overdue``) and needs no judgment either, so it isn't
+imported here: ``agents/orchestrator.py`` composes it into the same
+sweep tick from *its* position as the one file allowed to know about
+every agent, the same way it already composes Concentration Analyzer's
+check after Contract Intelligence. Keeping that composition out of this
+module is what keeps ``tests/test_architecture_invariants.py``'s
+no-agent-imports-another-agent invariant true, not just diagrammed.
 """
 
 from __future__ import annotations
@@ -24,7 +33,6 @@ from datetime import datetime, timedelta, timezone
 from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
 
-from bulwark.agents.offboarding import check_offboarding_overdue
 from bulwark.config import settings
 from bulwark.platform import identity, policy
 from bulwark.platform.event_bus import Envelope, bus, make_idempotency_key
@@ -48,13 +56,16 @@ def run_drift_sweep(trace_id: str) -> dict:
     Returns:
         `{run_id, signals}` -- one dict per detected signal, each with
         vendor_id, signal_type, detail, and severity, ready for
-        `reopen_assessment` to act on.
+        `reopen_assessment` to act on. Does not include the offboarding-
+        overdue signal -- `agents/orchestrator.py`'s `run_drift_sweep`
+        composes that in separately from `agents/offboarding.py`, so this
+        function never imports another agent module.
     """
     identity.require_grant("drift-sentinel", "assessments:read")
     identity.require_grant("drift-sentinel", "assessment_snapshots:read")
     policy.enforce_autonomy("drift-sentinel", 3)
 
-    steps = ["check_expiry", "check_evidence_drift", "check_breach_feed", "check_risk_trend", "check_offboarding_overdue"]
+    steps = ["check_expiry", "check_evidence_drift", "check_breach_feed", "check_risk_trend"]
     run = run_repo.start("drift-sentinel", steps)
     signals: list[dict] = []
 
@@ -132,13 +143,6 @@ def run_drift_sweep(trace_id: str) -> dict:
                 )
     run_repo.checkpoint(run.run_id, "check_risk_trend")
 
-    # A vendor still holding your data past the deadline their own DPA's
-    # termination_assistance clause set is a live compliance exposure,
-    # not a hypothetical one -- see agents/offboarding.py's module
-    # docstring for why this obligation is otherwise almost never tracked.
-    signals.extend(check_offboarding_overdue(trace_id))
-    run_repo.checkpoint(run.run_id, "check_offboarding_overdue")
-
     run_repo.complete(run.run_id)
     audit_log.record(
         agent_name="drift-sentinel", event="drift_sweep_completed",
@@ -210,11 +214,7 @@ drift_sentinel_agent = LlmAgent(
         "human reviewer can act on immediately without re-deriving it themselves. Then "
         "call `reopen_assessment` once per affected vendor with that reason and "
         "severity, passing along the trace_id you were given. If there are no signals "
-        "for a vendor, do not call reopen_assessment for it. Exception: for a vendor "
-        "whose only signal is `offboarding_overdue`, do not call `reopen_assessment` -- "
-        "that vendor isn't due for a normal reassessment, it's overdue on a data-deletion "
-        "obligation, which is a different problem the offboarding record already tracks; "
-        "your job for that signal is done once you've included it in your summary."
+        "for a vendor, do not call reopen_assessment for it."
     ),
     tools=[FunctionTool(run_drift_sweep), FunctionTool(reopen_assessment)],
 )

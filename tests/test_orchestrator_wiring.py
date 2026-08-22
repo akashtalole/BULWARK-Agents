@@ -7,7 +7,7 @@ so this is the boundary at which these tests stop and
 tests/test_agents_tools.py picks up (it exercises those same tool
 functions directly, unstubbed)."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -107,6 +107,31 @@ async def test_evidence_collected_triggers_a_drift_sweep(stub_run):
 
     drift_calls = [p for r, p in stub_run if not isinstance(r, str) and r is orchestrator._drift_sentinel_runner]
     assert len(drift_calls) == 1
+
+
+async def test_run_drift_sweep_surfaces_offboarding_overdue_signal(stub_run):
+    """agents/orchestrator.py's run_drift_sweep composes Drift Sentinel's
+    LLM-driven sweep with offboarding.check_offboarding_overdue's
+    deterministic check -- called from *this* file, not imported inside
+    drift_sentinel.py, which is what keeps
+    tests/test_architecture_invariants.py's no-agent-imports-another-agent
+    invariant true for this signal."""
+    from bulwark.platform.models import OffboardingRecord, offboarding_record_repo
+
+    vendor = orchestrator.vendor_repo.get_or_create("acme-eu", "Orchestrator Sweep Overdue Co")
+    offboarding_record_repo.create(
+        OffboardingRecord(
+            record_id=f"off_{vendor.vendor_id[-6:]}", tenant="acme-eu", vendor_id=vendor.vendor_id,
+            reason="contract ended", initiated_at=(datetime.now(timezone.utc) - timedelta(days=45)).isoformat(),
+            deadline=(datetime.now(timezone.utc) - timedelta(days=15)).isoformat(),
+        )
+    )
+
+    result = await orchestrator.run_drift_sweep()
+
+    matching = [s for s in result["offboarding_overdue_signals"] if s["vendor_id"] == vendor.vendor_id]
+    assert matching
+    assert matching[0]["signal_type"] == "offboarding_overdue"
 
 
 async def test_human_decision_triggers_remediation_follow_up(stub_run):

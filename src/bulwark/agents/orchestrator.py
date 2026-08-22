@@ -4,11 +4,14 @@ section 2, and the one hardcoded security gate that isn't left to a
 prompt.
 
 No agent module imports another agent module. Every handoff below is
-either (a) a direct function call from *this* file into exactly one
-agent's Runner, which is orchestration/system code acting under no
-agent's identity, or (b) ``bus.publish``/``bus.subscribe`` on a named
-topic. That is the decoupling the architecture is graded on, and it's
-mechanically true here, not just diagrammed that way.
+either (a) a direct function call from *this* file -- into an LLM
+agent's Runner, or into a deterministic (non-LLM) agent's plain function,
+like ``check_offboarding_overdue`` or ``analyze_concentration_risk`` --
+which is orchestration/system code acting under no agent's identity, or
+(b) ``bus.publish``/``bus.subscribe`` on a named topic. That is the
+decoupling the architecture is graded on, and
+``tests/test_architecture_invariants.py`` checks it mechanically on every
+run rather than leaving it as a claim a diagram makes.
 """
 
 from __future__ import annotations
@@ -27,6 +30,7 @@ from bulwark.agents.concentration_analyzer import analyze_concentration_risk
 from bulwark.agents.contract_intelligence import contract_intelligence_agent
 from bulwark.agents.drift_sentinel import drift_sentinel_agent
 from bulwark.agents.executive_digest import executive_digest_agent
+from bulwark.agents.offboarding import check_offboarding_overdue
 from bulwark.agents.questionnaire_responder import questionnaire_responder_agent
 from bulwark.agents.remediation_router import remediation_router_agent
 from bulwark.agents.risk_assessor import risk_assessor_agent
@@ -240,10 +244,18 @@ async def run_drift_sweep() -> dict[str, Any]:
     """Manual/scheduled tick for Drift Sentinel. Cloud Scheduler drives
     this in production (deploy/setup_gcp.sh provisions the job); locally
     or in the demo, POST /drift-sentinel/tick (see scripts/demo_cli.py)
-    calls this directly."""
+    calls this directly.
+
+    Also composes in the offboarding-overdue check from `agents/
+    offboarding.py` -- a deterministic comparison that needs no LLM
+    judgment, so it's called directly from here (the composition root)
+    rather than imported into `drift_sentinel.py` itself, the same shape
+    as `_on_subprocessors_extracted` calling Concentration Analyzer
+    below. See `tests/test_architecture_invariants.py`."""
     trace_id = uuid.uuid4().hex
     summary = await _run(_drift_sentinel_runner, "Event: scheduled drift sweep. Run it now.", "system", trace_id)
-    return {"trace_id": trace_id, "summary": summary}
+    offboarding_overdue_signals = check_offboarding_overdue(trace_id)
+    return {"trace_id": trace_id, "summary": summary, "offboarding_overdue_signals": offboarding_overdue_signals}
 
 
 async def generate_digest() -> dict[str, Any]:
