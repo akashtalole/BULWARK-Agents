@@ -90,6 +90,14 @@ class Settings:
         if o.strip()
     )
 
+    # Local-demo convenience: seeds scripts/seed_demo_data.py's scenario
+    # into the *same process* as the running server on startup. Off by
+    # default -- the store is pure in-memory unless USE_FIRESTORE is set,
+    # so running the seed script as a separate `python` process (as a
+    # naive two-terminal walkthrough would) writes into a store the
+    # server never sees. This flag is the fix: one process, one store.
+    seed_demo_data: bool = _bool_env("BULWARK_SEED_DEMO_DATA", False)
+
     service_name: str = os.environ.get("BULWARK_SERVICE_NAME", "bulwark")
     service_version: str = os.environ.get("BULWARK_SERVICE_VERSION", "0.1.0")
     environment: str = os.environ.get("BULWARK_ENVIRONMENT", "local")

@@ -34,7 +34,7 @@ from bulwark.platform.models import ControlRequirement, control_repo, questionna
 from bulwark.platform.registry import bootstrap_registry  # noqa: E402
 
 
-def main() -> None:
+async def main() -> None:
     bootstrap_registry()
 
     control_repo.upsert(ControlRequirement(control_ref="CC6.1", tenant="acme-eu", framework="SOC2", title="Multi-factor authentication", requirement_text="MFA enforced for all employee access", owner="security", criticality="high"))
@@ -96,14 +96,14 @@ def main() -> None:
     print(f"  {terms['flagged_count']} of {len(terms['term_ids'])} clauses flagged against the playbook")
 
     print("Same DPA discloses its subprocessors -- including one Cloudy SaaS Inc (critical-tier) also uses")
-    asyncio.run(extract_subprocessors(
+    await extract_subprocessors(
         dpa_scan["vendor_id"], dpa_scan["artifact_id"],
         [{"name": "AWS us-east-1", "purpose": "cloud hosting", "location": "USA"}],
-    ))
-    asyncio.run(extract_subprocessors(
+    )
+    await extract_subprocessors(
         scan["vendor_id"], "art_demo_clean_subproc",
         [{"name": "aws us-east-1", "purpose": "cloud hosting", "location": "USA"}],  # case-different, same provider
-    ))
+    )
 
     print("Running Concentration Analyzer across the whole portfolio")
     risks = analyze_concentration_risk("trace_demo_concentration")
@@ -165,4 +165,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

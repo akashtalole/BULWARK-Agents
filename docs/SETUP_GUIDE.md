@@ -37,8 +37,8 @@ or (b) Firestore/Pub/Sub/Cloud Run instead of the in-memory equivalents.
 ## Path 1: Local, in-memory, no cloud project
 
 ```bash
-git clone <this-repo-url>
-cd All-Things-Agentic-Hackathon
+git clone https://github.com/akashtalole/BULWARK-Agents.git
+cd BULWARK-Agents
 python3 -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
@@ -49,6 +49,7 @@ Run it:
 
 ```bash
 export PYTHONPATH=src
+export BULWARK_SEED_DEMO_DATA=true   # seeds realistic demo data on startup, see below
 uvicorn bulwark.main:app --reload --port 8080
 ```
 
@@ -63,14 +64,22 @@ contract review via Contract Intelligence), `POST /questionnaires`, and
 configured` until you add Gemini credentials -- see
 [Configuring Gemini credentials](#configuring-gemini-credentials) below.
 
-Seed some realistic data and explore immediately (works with zero
-credentials -- see `scripts/seed_demo_data.py`'s module docstring):
+`BULWARK_SEED_DEMO_DATA=true` (set above) already seeded realistic data
+on startup -- vendors, findings, a poisoned artifact, a questionnaire,
+works with zero credentials (see `scripts/seed_demo_data.py`'s module
+docstring). Explore it immediately:
 
 ```bash
-python scripts/seed_demo_data.py
 curl -s -H 'X-API-Key: demo-key' http://localhost:8080/registry | jq
 curl -s -H 'X-API-Key: demo-key' http://localhost:8080/vendors | jq
 ```
+
+If you'd rather seed on demand instead of on every startup, leave
+`BULWARK_SEED_DEMO_DATA` unset and run `python scripts/seed_demo_data.py`
+directly -- but only from code that shares the running server's process
+(e.g. a debugger attached to it), or against a shared `USE_FIRESTORE=true`
+store. Run as a separate `python` process against the default in-memory
+store, its writes land in a store the running server never reads from.
 
 `demo-key` is the default API key (`BULWARK_API_KEYS` in
 [Environment variable reference](#environment-variable-reference)).

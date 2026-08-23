@@ -278,14 +278,18 @@ flow -- is tested directly, without needing a live Gemini call.
 
 ```bash
 export PYTHONPATH=src
+export BULWARK_SEED_DEMO_DATA=true   # seeds vendors, findings, a poisoned artifact, a questionnaire on startup
 uvicorn bulwark.main:app --reload --port 8080
 ```
 
 No `GOOGLE_CLOUD_PROJECT` needed for this -- everything runs in-memory.
+`BULWARK_SEED_DEMO_DATA=true` runs `scripts/seed_demo_data.py`'s scenario
+*inside this same process* on startup -- important, because the store is
+plain in-memory by default: running that script as a separate `python`
+process afterward would seed a store the running server never sees.
 Explore immediately, no credentials required:
 
 ```bash
-python scripts/seed_demo_data.py   # seeds vendors, findings, a poisoned artifact, a questionnaire
 curl -s -H 'X-API-Key: demo-key' http://localhost:8080/registry | jq
 curl -s -H 'X-API-Key: demo-key' http://localhost:8080/vendors | jq
 curl -s -H 'X-API-Key: demo-key' http://localhost:8080/evidence-collector/tick -X POST | jq   # deterministic, works with zero credentials

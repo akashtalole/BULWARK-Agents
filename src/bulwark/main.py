@@ -36,7 +36,33 @@ async def lifespan(_: FastAPI):
             "No Gemini credentials found (GOOGLE_API_KEY or Vertex AI project). "
             "POST endpoints that invoke an agent will return 503 until credentials are configured."
         )
+    if settings.seed_demo_data:
+        await _seed_demo_data_in_process()
     yield
+
+
+async def _seed_demo_data_in_process() -> None:
+    """Runs scripts/seed_demo_data.py's scenario inside *this* process so
+    it lands in the same in-memory store the running server reads from --
+    see BULWARK_SEED_DEMO_DATA's docstring in config.py for why running it
+    as a separate `python scripts/seed_demo_data.py` process would not
+    actually be visible through this server's API. Awaited directly
+    (rather than via `asyncio.run`, which `scripts/seed_demo_data.py`'s
+    own `__main__` block uses for standalone invocation) because this
+    runs inside uvicorn's already-running event loop during lifespan
+    startup, and `asyncio.run` cannot nest inside one."""
+    import importlib.util
+    from pathlib import Path
+
+    seed_path = Path(__file__).resolve().parent.parent.parent / "scripts" / "seed_demo_data.py"
+    if not seed_path.exists():
+        logger.error("BULWARK_SEED_DEMO_DATA=true but %s is missing -- skipping seed.", seed_path)
+        return
+    spec = importlib.util.spec_from_file_location("bulwark_scripts_seed_demo_data", seed_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    await module.main()
+    logger.info("Demo data seeded in-process (BULWARK_SEED_DEMO_DATA=true).")
 
 
 app = FastAPI(
