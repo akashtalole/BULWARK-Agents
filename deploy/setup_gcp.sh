@@ -39,6 +39,22 @@ gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
   --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
   --role="roles/cloudbuild.builds.builder" --condition=None >/dev/null
 
+echo "==> Ensuring the Artifact Registry Docker repository exists"
+# deploy_cloud_run.sh pushes to REGION-docker.pkg.dev/PROJECT_ID/
+# cloud-run-source-deploy/SERVICE_NAME. Unlike the legacy gcr.io
+# registry, Artifact Registry repositories are never auto-created by
+# `gcloud builds submit --tag` -- without this the image push fails
+# with "name unknown: Repository \"cloud-run-source-deploy\" not found"
+# on a project that has never deployed anything via this path before.
+if ! gcloud artifacts repositories describe cloud-run-source-deploy --location="${REGION}" >/dev/null 2>&1; then
+  gcloud artifacts repositories create cloud-run-source-deploy \
+    --repository-format=docker \
+    --location="${REGION}" \
+    --description="Container images for BULWARK Cloud Run deploys"
+else
+  echo "    cloud-run-source-deploy already exists, skipping."
+fi
+
 echo "==> Ensuring a Firestore (Native mode) database exists"
 if ! gcloud firestore databases describe --database="(default)" >/dev/null 2>&1; then
   gcloud firestore databases create --database="(default)" --location="${REGION}" --type=firestore-native
