@@ -60,18 +60,22 @@ done
 # Name -> allowed-scope summary, matching platform/identity.py exactly.
 declare -A SERVICE_ACCOUNTS=(
   ["sa-supervisor"]="events:route only -- no Firestore, no GCS, no egress"
-  ["sa-intake"]="Storage Object Viewer on quarantine bucket + Firestore write on assertions/artifacts only"
-  ["sa-evidence"]="Cloud Asset Viewer, Security Center Findings Viewer, Logs Viewer, IAM read + Firestore write on evidence only"
+  ["sa-intake"]="GCS Object Viewer (quarantine) + Firestore write (assertions/artifacts) only"
+  ["sa-evidence"]="Asset/Security Center/Logs/IAM read + Firestore write (evidence) only"
   ["sa-assessor"]="Firestore read (assertions, evidence, controls) + write (findings) only"
   ["sa-questionnaire"]="Firestore read (evidence) + write (answers) only, no GCS"
   ["sa-sentinel"]="Firestore r/w (assessments), Pub/Sub publish"
   ["sa-remediation"]="Secret Manager read, Pub/Sub publish, ticket-system write"
-  ["sa-contract"]="Storage Object Viewer on quarantine bucket + Firestore write on contract_terms/subprocessors only, Pub/Sub publish"
-  ["sa-concentration"]="Firestore read (subprocessors, vendors) + write (concentration_risks) only, no GCS, no egress"
+  ["sa-contract"]="GCS quarantine read + Firestore write (contract_terms/subprocessors), Pub/Sub publish"
+  ["sa-concentration"]="Firestore read (subprocessors, vendors) + write (concentration_risks), no GCS/egress"
   ["sa-crosswalk"]="Firestore read (findings) only -- writes nothing, no GCS, no egress"
-  ["sa-offboarding"]="Firestore read (contract_terms) + write (vendors, offboarding_records) only, no GCS, no egress"
-  ["sa-digest"]="Firestore read (findings, vendors, concentration_risks, offboarding_records) + write (digests) only, no GCS, no egress"
+  ["sa-offboarding"]="Firestore read (contract_terms) + write (vendors, offboarding_records), no GCS/egress"
+  ["sa-digest"]="Firestore read (findings/vendors/concentration/offboard) + write (digests), no GCS/egress"
 )
+# IAM service-account display names cap at 100 chars; every "BULWARK: "
+# + description above must stay at or under that (checked in CI-less
+# fashion by tests/test_deploy_scripts.py, which fails the build if a
+# future edit here regresses past the limit).
 
 echo "==> Creating per-agent service accounts (zero-trust identity)"
 for SA in "${!SERVICE_ACCOUNTS[@]}"; do
