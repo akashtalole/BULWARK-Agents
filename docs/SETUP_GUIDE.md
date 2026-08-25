@@ -168,7 +168,7 @@ either `export` the values yourself or run under `dotenv run`).
 | `GEMINI_FLASH_MODEL` | Model id for the six Flash-backed agents | `gemini-flash-latest` |
 | `GEMINI_PRO_MODEL` | Model id for Risk Assessor (the one agent on Pro) | `gemini-pro-latest` |
 | `USE_FIRESTORE` | Use Firestore instead of in-memory dict stores | `true` once `GOOGLE_CLOUD_PROJECT` is set, otherwise `false` |
-| `FIRESTORE_DATABASE` | Firestore database id, if not `(default)` | `(default)` |
+| `FIRESTORE_DATABASE` | Firestore database id -- use a named database (`deploy/setup_gcp.sh` creates one called `bulwark`), never the literal `(default)`: confirmed via a real Cloud Run crash that the Python client resolves `(default)` to that literal string either way, and something downstream percent-encodes its parentheses, which Firestore then rejects | `bulwark` |
 | `USE_PUBSUB` | Also mirror every event onto real Pub/Sub topics (in-process dispatch always happens regardless) | `false` |
 | `BULWARK_API_KEYS` | Comma-separated allowlist the Agent Gateway accepts in `X-API-Key` | `demo-key` |
 | `BULWARK_CORS_ALLOW_ORIGINS` | Comma-separated origins allowed to call the API cross-origin (the dashboard's origin) | `http://localhost:5173,http://127.0.0.1:5173` |

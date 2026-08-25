@@ -1,15 +1,13 @@
-"""Regression test for a real Cloud Run deploy failure: DocumentStore
-used to always pass `database=settings.firestore_database` to
-`firestore.Client(...)`, including the default `"(default)"` value.
-Passing that literal string explicitly triggers a known
-google-cloud-firestore bug where the resource path ends up with it
-percent-encoded, and the backend rejects it with "Invalid database id
-%28default%29" -- observed directly in production logs, not
-theoretical. This can't be exercised against a real Firestore backend
-in this test environment, so it verifies the fix the only way possible
-offline: that DocumentStore calls firestore.Client() *without* a
-`database` kwarg for the default database, and *with* one only for a
-genuinely non-default, named database."""
+"""Tests DocumentStore's two firestore.Client() call shapes: no
+`database` kwarg for the special "(default)" database (discouraged, see
+platform/store.py's module docstring -- this does NOT itself fix the
+production crash that motivated it, since the client resolves an
+omitted kwarg and an explicit "(default)" identically; config.py's
+named-database default is the actual fix), and an explicit `database`
+kwarg for a genuinely named one, which is the recommended, working
+path. Can't be exercised against a real Firestore backend in this test
+environment, so this checks exactly what firestore.Client() gets
+called with in each case instead."""
 
 from __future__ import annotations
 

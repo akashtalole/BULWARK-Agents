@@ -5,6 +5,28 @@ tenant_id/vendor_id carried as fields -- a flattening of the spec's true
 nested subcollection paths (/tenants/{t}/vendors/{v}/artifacts/{a}) that
 keeps queries simple in both backends. Composite indexes for the
 production Firestore layout are listed in docs/architecture.md.
+
+On the special "(default)" Firestore database (as opposed to a named
+one): confirmed on a real Cloud Run deploy that this app crashes on
+every startup with google.api_core.exceptions.InvalidArgument: 400
+Invalid database id %28default%29 -- "(default)" percent-encoded --
+whenever the client actually talks to Firestore, e.g. `set()` below.
+Root-caused by reading the installed client's own source
+(google.cloud.firestore_v1.base_client): `database = database or
+DEFAULT_DATABASE` means passing `database="(default)"` explicitly and
+omitting the kwarg both resolve to the exact same literal string, so
+there is no code-level way to route around this from the caller's side
+-- an earlier fix here that tried exactly that (omit the kwarg for the
+default case) made no actual difference. The client then sends that
+literal string, parentheses included, unencoded in a gRPC metadata
+header; something downstream -- the transport layer or Cloud Run's own
+networking, not anything this app's code touches -- percent-encodes it,
+and Firestore rejects the mangled result. The actual fix is upstream of
+this file: config.py's `firestore_database` defaults to a named
+database ("bulwark", created by deploy/setup_gcp.sh) that has no
+parentheses for anything in that chain to mangle. This file still
+special-cases the literal "(default)" string below for anyone who sets
+FIRESTORE_DATABASE to it anyway, but doing so is not recommended.
 """
 
 from __future__ import annotations
@@ -24,16 +46,13 @@ class DocumentStore:
             from google.cloud import firestore  # optional dep, imported lazily
 
             if settings.firestore_database == "(default)":
-                # Passing database="(default)" explicitly triggers a known
-                # google-cloud-firestore bug: the literal string gets
-                # percent-encoded while building the resource path, and the
-                # backend rejects it with "Invalid database id
-                # %28default%29" (i.e. "(default)" double-encoded) --
-                # observed directly on a real Cloud Run deploy, not
-                # theoretical. Omitting the kwarg for the default database
-                # takes the client's own default-handling path instead,
-                # which doesn't have this bug. Only a genuinely non-default,
-                # named database needs the kwarg at all.
+                # See this module's docstring: omitting the kwarg here is
+                # NOT a fix for the "(default)" database's percent-encoding
+                # crash (the client resolves both forms identically) --
+                # config.py's default of a named database is the actual
+                # fix. This branch only exists so a caller who explicitly
+                # opts into "(default)" still gets the semantically correct
+                # call rather than a confusing one.
                 self._client = firestore.Client(project=settings.gcp_project)
             else:
                 self._client = firestore.Client(

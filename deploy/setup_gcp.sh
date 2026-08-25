@@ -56,8 +56,21 @@ else
 fi
 
 echo "==> Ensuring a Firestore (Native mode) database exists"
-if ! gcloud firestore databases describe --database="(default)" >/dev/null 2>&1; then
-  gcloud firestore databases create --database="(default)" --location="${REGION}" --type=firestore-native
+# A *named* database ("bulwark"), not the special "(default)" one --
+# confirmed via a real Cloud Run deploy: the Python client always
+# resolves the database id to the literal string "(default)"
+# (google.cloud.firestore_v1.base_client.Client sets
+# `database = database or DEFAULT_DATABASE`, so passing it explicitly
+# or omitting it are identical) and sends that literal string,
+# parentheses included, unencoded in a gRPC metadata header. Something
+# downstream -- the transport layer or Cloud Run's own networking, not
+# something this app's code controls -- percent-encodes those
+# parentheses before the request reaches Firestore, which then rejects
+# it with "Invalid database id %28default%29" and crashes the app on
+# every single startup. A plain alphanumeric database name has no
+# special characters for anything in that chain to mangle.
+if ! gcloud firestore databases describe --database="${FIRESTORE_DATABASE:-bulwark}" >/dev/null 2>&1; then
+  gcloud firestore databases create --database="${FIRESTORE_DATABASE:-bulwark}" --location="${REGION}" --type=firestore-native
 else
   echo "    Firestore database already exists, skipping."
 fi

@@ -13,6 +13,16 @@ here mechanically and offline instead.
    legacy gcr.io registry). If the two scripts' repo names ever drift
    apart, the image push fails with "Repository ... not found" -- this
    asserts they still agree.
+3. The Firestore database the app connects to must be a genuinely named
+   database, never the special "(default)" one -- confirmed via a real
+   Cloud Run deploy crash (see platform/store.py's module docstring):
+   google-cloud-firestore's Python client resolves an omitted `database`
+   kwarg to the literal string "(default)" just the same as passing it
+   explicitly, and something downstream percent-encodes that string's
+   parentheses before Firestore sees it, which then rejects the mangled
+   result with "Invalid database id %28default%29" on every single
+   startup. setup_gcp.sh and deploy_cloud_run.sh must agree on the same
+   named database, and neither may fall back to "(default)".
 """
 
 from __future__ import annotations
@@ -67,4 +77,27 @@ def test_setup_gcp_sh_creates_the_artifact_registry_repo_deploy_cloud_run_sh_pus
     assert created_repo_match.group(1) == pushed_repo_match.group(1), (
         f"setup_gcp.sh creates repository {created_repo_match.group(1)!r} but "
         f"deploy_cloud_run.sh pushes to {pushed_repo_match.group(1)!r} -- the image push will 404"
+    )
+
+
+def test_setup_gcp_sh_and_deploy_cloud_run_sh_agree_on_a_named_firestore_database():
+    setup_text = _SETUP_SCRIPT.read_text()
+    deploy_text = _DEPLOY_SCRIPT.read_text()
+
+    setup_match = re.search(r'gcloud firestore databases create --database="\$\{FIRESTORE_DATABASE:-([^}"]+)\}"', setup_text)
+    assert setup_match, "setup_gcp.sh's Firestore database creation command changed in a way this check doesn't recognize"
+
+    deploy_match = re.search(r"FIRESTORE_DATABASE=\$\{FIRESTORE_DATABASE:-([^},]+)\}", deploy_text)
+    assert deploy_match, "deploy_cloud_run.sh no longer sets FIRESTORE_DATABASE in --set-env-vars"
+
+    setup_db, deploy_db = setup_match.group(1), deploy_match.group(1)
+    assert setup_db == deploy_db, (
+        f"setup_gcp.sh creates Firestore database {setup_db!r} but deploy_cloud_run.sh points the "
+        f"app at {deploy_db!r} -- the app will fail to find/write to it"
+    )
+    assert setup_db != "(default)", (
+        'The default Firestore database id must never be the literal string "(default)" -- confirmed '
+        "via a real Cloud Run crash that the Python client resolves to that literal string regardless "
+        "of how it's passed, and something downstream percent-encodes its parentheses, which Firestore "
+        "then rejects with 'Invalid database id %28default%29' on every startup."
     )

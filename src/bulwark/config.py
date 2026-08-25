@@ -36,7 +36,15 @@ class Settings:
     )
 
     gcp_project: str | None = os.environ.get("GOOGLE_CLOUD_PROJECT")
-    firestore_database: str = os.environ.get("FIRESTORE_DATABASE", "(default)")
+    # A named database, not the special "(default)" one -- confirmed via a
+    # real Cloud Run deploy crash (see platform/store.py's module
+    # docstring): the Python client resolves "(default)" to that exact
+    # literal string whether it's passed explicitly or omitted, and
+    # something downstream percent-encodes its parentheses, which
+    # Firestore then rejects with "Invalid database id %28default%29" on
+    # every startup. deploy/setup_gcp.sh creates a database named
+    # "bulwark" to match.
+    firestore_database: str = os.environ.get("FIRESTORE_DATABASE", "bulwark")
     use_firestore: bool = bool(os.environ.get("GOOGLE_CLOUD_PROJECT")) and _bool_env(
         "USE_FIRESTORE", True
     )
