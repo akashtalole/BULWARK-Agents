@@ -24,6 +24,21 @@ gcloud services enable \
   cloudbuild.googleapis.com \
   artifactregistry.googleapis.com
 
+echo "==> Granting the default Compute Engine service account Cloud Build permissions"
+# Since GCP stopped auto-granting IAM roles to a new project's default
+# service accounts (April 2024), the Compute Engine default SA --
+# PROJECT_NUMBER-compute@developer.gserviceaccount.com, which
+# `gcloud builds submit`/`gcloud run deploy --source`
+# (deploy_cloud_run.sh) runs the build as by default -- starts with no
+# permissions at all. Without this it fails reading back its own
+# just-uploaded source tarball from the Cloud Build staging bucket with
+# a 403 (storage.objects.get denied): a fresh-project blocker, not
+# specific to this repo, but easy to hit on the very first deploy.
+PROJECT_NUMBER="$(gcloud projects describe "${PROJECT_ID}" --format='value(projectNumber)')"
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+  --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+  --role="roles/cloudbuild.builds.builder" --condition=None >/dev/null
+
 echo "==> Ensuring a Firestore (Native mode) database exists"
 if ! gcloud firestore databases describe --database="(default)" >/dev/null 2>&1; then
   gcloud firestore databases create --database="(default)" --location="${REGION}" --type=firestore-native
