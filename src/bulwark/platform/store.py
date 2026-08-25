@@ -23,9 +23,22 @@ class DocumentStore:
         if settings.use_firestore:
             from google.cloud import firestore  # optional dep, imported lazily
 
-            self._client = firestore.Client(
-                project=settings.gcp_project, database=settings.firestore_database
-            )
+            if settings.firestore_database == "(default)":
+                # Passing database="(default)" explicitly triggers a known
+                # google-cloud-firestore bug: the literal string gets
+                # percent-encoded while building the resource path, and the
+                # backend rejects it with "Invalid database id
+                # %28default%29" (i.e. "(default)" double-encoded) --
+                # observed directly on a real Cloud Run deploy, not
+                # theoretical. Omitting the kwarg for the default database
+                # takes the client's own default-handling path instead,
+                # which doesn't have this bug. Only a genuinely non-default,
+                # named database needs the kwarg at all.
+                self._client = firestore.Client(project=settings.gcp_project)
+            else:
+                self._client = firestore.Client(
+                    project=settings.gcp_project, database=settings.firestore_database
+                )
         else:
             self._memory: dict[str, dict[str, Any]] = {}
             self._lock = threading.Lock()
