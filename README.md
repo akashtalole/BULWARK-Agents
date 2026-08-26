@@ -317,6 +317,14 @@ by default) and API key (`demo-key` by default) match your running
 server -- both live in `localStorage`, per browser. See
 [`frontend/README.md`](frontend/README.md) for building/deploying it.
 
+Light/dark theme (the sun/moon toggle, top right) and search/filter/sort
+on the Vendors, Findings, and Questionnaires tables both work with zero
+configuration. Questionnaires can be edited after submission (rename the
+buyer, add/remove questions -- `PATCH /questionnaires/{id}`) from a
+questionnaire's detail page; see [`docs/firebase_auth_feasibility.md`](docs/firebase_auth_feasibility.md)
+for what real multi-user login would take beyond the current single
+`BULWARK_UI_PASSWORD` gate.
+
 ### 5. Configure Gemini and run a full agent cycle
 
 ```bash

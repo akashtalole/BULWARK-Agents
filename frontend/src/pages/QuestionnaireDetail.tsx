@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useApi, ApiError } from "../lib/api";
@@ -9,17 +10,20 @@ import {
   Tr,
   Badge,
   Button,
+  Input,
+  Textarea,
   LoadingBlock,
   ErrorBlock,
   Mono,
   toneForAnswerStatus,
 } from "../components/ui";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, Pencil } from "lucide-react";
 
 export default function QuestionnaireDetail() {
   const { questionnaireId } = useParams<{ questionnaireId: string }>();
   const api = useApi();
   const qc = useQueryClient();
+  const [editing, setEditing] = useState(false);
 
   const q = useQuery({
     queryKey: ["questionnaire", questionnaireId],
@@ -47,11 +51,25 @@ export default function QuestionnaireDetail() {
           <h1 className="text-xl font-semibold text-zinc-100">{data.buyer}</h1>
           <Mono className="mt-1">{data.questionnaire_id}</Mono>
         </div>
-        <Button variant="primary" disabled={exportMutation.isPending} onClick={() => exportMutation.mutate()}>
-          <Download className="h-3.5 w-3.5" />
-          {exportMutation.isPending ? "Exporting…" : "Export (auto-status only)"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" onClick={() => setEditing((e) => !e)}>
+            <Pencil className="h-3.5 w-3.5" />
+            {editing ? "Cancel" : "Edit"}
+          </Button>
+          <Button variant="primary" disabled={exportMutation.isPending} onClick={() => exportMutation.mutate()}>
+            <Download className="h-3.5 w-3.5" />
+            {exportMutation.isPending ? "Exporting…" : "Export (auto-status only)"}
+          </Button>
+        </div>
       </div>
+
+      {editing && (
+        <EditQuestionnaireCard
+          questionnaireId={questionnaireId!}
+          data={data}
+          onSaved={() => setEditing(false)}
+        />
+      )}
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <Card>
@@ -123,5 +141,62 @@ export default function QuestionnaireDetail() {
         </Table>
       </Card>
     </div>
+  );
+}
+
+function EditQuestionnaireCard({
+  questionnaireId,
+  data,
+  onSaved,
+}: {
+  questionnaireId: string;
+  data: { buyer: string; answers: { question: string }[] };
+  onSaved: () => void;
+}) {
+  const api = useApi();
+  const qc = useQueryClient();
+  const [buyer, setBuyer] = useState(data.buyer);
+  const [questionsRaw, setQuestionsRaw] = useState(data.answers.map((a) => a.question).join("\n"));
+
+  const update = useMutation({
+    mutationFn: () =>
+      api.updateQuestionnaire(questionnaireId, {
+        buyer,
+        questions: questionsRaw
+          .split("\n")
+          .map((q) => q.trim())
+          .filter(Boolean),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["questionnaire", questionnaireId] });
+      qc.invalidateQueries({ queryKey: ["questionnaires"] });
+      onSaved();
+    },
+  });
+
+  return (
+    <Card
+      title="Edit questionnaire"
+      subtitle="PATCH /questionnaires/{id} — a manual edit, not a re-run: unchanged questions keep their existing answer, new ones start unanswered, removed ones lose theirs"
+    >
+      <div className="space-y-3">
+        <div>
+          <label className="mb-1 block text-xs text-zinc-500">Buyer</label>
+          <Input value={buyer} onChange={setBuyer} className="w-full max-w-sm" />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs text-zinc-500">Questions (one per line)</label>
+          <Textarea value={questionsRaw} onChange={setQuestionsRaw} rows={Math.max(4, data.answers.length + 1)} />
+        </div>
+        <Button
+          variant="primary"
+          disabled={!buyer || !questionsRaw.trim() || update.isPending}
+          onClick={() => update.mutate()}
+        >
+          {update.isPending ? "Saving…" : "Save changes"}
+        </Button>
+        {update.isError && <ErrorBlock message={(update.error as ApiError).message} />}
+      </div>
+    </Card>
   );
 }

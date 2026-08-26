@@ -14,6 +14,7 @@ import type {
   Finding,
   Metrics,
   OffboardingRecord,
+  Questionnaire,
   QuestionnaireDetail,
   Subprocessor,
   SubmitArtifactResponse,
@@ -73,6 +74,10 @@ export class BulwarkClient {
 
   private post<T>(path: string, body?: unknown): Promise<T> {
     return this.request<T>(path, { method: "POST", body: body !== undefined ? JSON.stringify(body) : undefined });
+  }
+
+  private patch<T>(path: string, body?: unknown): Promise<T> {
+    return this.request<T>(path, { method: "PATCH", body: body !== undefined ? JSON.stringify(body) : undefined });
   }
 
   healthz(): Promise<{ status: string }> {
@@ -179,8 +184,19 @@ export class BulwarkClient {
     return this.post("/questionnaires", { buyer, questions });
   }
 
+  listQuestionnaires(): Promise<Questionnaire[]> {
+    return this.get("/questionnaires");
+  }
+
   getQuestionnaire(questionnaireId: string): Promise<QuestionnaireDetail> {
     return this.get(`/questionnaires/${questionnaireId}`);
+  }
+
+  updateQuestionnaire(
+    questionnaireId: string,
+    patch: { buyer?: string; questions?: string[] },
+  ): Promise<QuestionnaireDetail> {
+    return this.patch(`/questionnaires/${questionnaireId}`, patch);
   }
 
   exportQuestionnaire(questionnaireId: string): Promise<{

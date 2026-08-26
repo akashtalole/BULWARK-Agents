@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import clsx from "clsx";
+import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 
 export function Card({
   children,
@@ -322,15 +323,41 @@ export function Table({ children, className }: { children: ReactNode; className?
   );
 }
 
-export function Th({ children, className }: { children?: ReactNode; className?: string }) {
+export function Th({
+  children,
+  className,
+  onClick,
+  sortDirection,
+}: {
+  children?: ReactNode;
+  className?: string;
+  /** Present -> renders this header clickable with a sort indicator (see lib/sort.ts's useSort). */
+  onClick?: () => void;
+  sortDirection?: "asc" | "desc" | null;
+}) {
   return (
     <th
+      onClick={onClick}
       className={clsx(
         "border-b border-zinc-800 px-3 py-2 text-xs font-medium uppercase tracking-wide text-zinc-500",
+        onClick && "cursor-pointer select-none hover:text-zinc-300",
         className,
       )}
     >
-      {children}
+      {onClick ? (
+        <span className="inline-flex items-center gap-1">
+          {children}
+          {sortDirection === "asc" ? (
+            <ChevronUp className="h-3 w-3" />
+          ) : sortDirection === "desc" ? (
+            <ChevronDown className="h-3 w-3" />
+          ) : (
+            <ChevronsUpDown className="h-3 w-3 opacity-40" />
+          )}
+        </span>
+      ) : (
+        children
+      )}
     </th>
   );
 }
