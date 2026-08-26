@@ -31,12 +31,11 @@ URL="https://storage.googleapis.com/${BUCKET_NAME}/index.html"
 echo
 echo "Deployed: ${URL}"
 echo
-echo "This is a plain static file, not a load-balancer-fronted website, so"
-echo "only the root URL above works directly -- in-app navigation after that"
-echo "(React Router, client-side) works fine, but a bookmarked deep link like"
-echo "  https://storage.googleapis.com/${BUCKET_NAME}/vendors/123"
-echo "will 404, since no such object exists in the bucket. Always enter"
-echo "through the URL above."
+echo "This is a plain static file, not a load-balancer-fronted website. The"
+echo "app uses hash-based routing (#/vendors/123) specifically so this works:"
+echo "every in-app URL, including bookmarked/shared deep links, is really"
+echo "just the one object above plus a fragment the server never sees, so"
+echo "there's nothing to 404 on."
 echo
 echo "Once it's open, set these in the sidebar's Connection settings:"
 echo "  Base URL: your Cloud Run backend URL (from deploy_cloud_run.sh's output)"
