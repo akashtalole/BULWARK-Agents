@@ -48,6 +48,7 @@ _DEPLOY_DIR = Path(__file__).resolve().parent.parent / "deploy"
 _SETUP_SCRIPT = _DEPLOY_DIR / "setup_gcp.sh"
 _DEPLOY_SCRIPT = _DEPLOY_DIR / "deploy_cloud_run.sh"
 _FRONTEND_DEPLOY_SCRIPT = _DEPLOY_DIR / "deploy_frontend.sh"
+_TEARDOWN_SCRIPT = _DEPLOY_DIR / "teardown_gcp.sh"
 _DISPLAY_NAME_MAX_LENGTH = 100
 _DISPLAY_NAME_PREFIX = "BULWARK: "
 _ENTRY_PATTERN = re.compile(r'\["(sa-[\w-]+)"\]="([^"]*)"')
@@ -185,3 +186,33 @@ def test_deploy_cloud_run_sh_does_not_default_to_a_latest_suffixed_gemini_model(
             "publisher-model catalog doesn't resolve, and this script always sets "
             "GOOGLE_GENAI_USE_VERTEXAI=true, so its defaults must be versioned Vertex-listed ids."
         )
+
+
+def test_teardown_gcp_sh_is_valid_bash():
+    result = subprocess.run(["bash", "-n", str(_TEARDOWN_SCRIPT)], capture_output=True, text=True)
+    assert result.returncode == 0, f"deploy/teardown_gcp.sh has a syntax error:\n{result.stderr}"
+
+
+def test_teardown_gcp_sh_deletes_the_same_named_firestore_database_setup_creates():
+    teardown_text = _TEARDOWN_SCRIPT.read_text()
+    setup_text = _SETUP_SCRIPT.read_text()
+
+    teardown_match = re.search(r'FIRESTORE_DATABASE="\$\{FIRESTORE_DATABASE:-([^}"]+)\}"', teardown_text)
+    assert teardown_match, "teardown_gcp.sh's FIRESTORE_DATABASE default changed in a way this check doesn't recognize"
+
+    setup_match = re.search(r'gcloud firestore databases create --database="\$\{FIRESTORE_DATABASE:-([^}"]+)\}"', setup_text)
+    assert setup_match, "setup_gcp.sh's Firestore database creation command changed in a way this check doesn't recognize"
+
+    assert teardown_match.group(1) == setup_match.group(1), (
+        f"teardown_gcp.sh defaults to deleting database {teardown_match.group(1)!r} but setup_gcp.sh "
+        f"creates {setup_match.group(1)!r} -- a teardown-then-rebuild cycle would leave the old "
+        "database's data behind untouched instead of actually starting clean."
+    )
+
+
+def test_teardown_gcp_sh_requires_confirmation_unless_yes_is_passed():
+    teardown_text = _TEARDOWN_SCRIPT.read_text()
+    assert "--yes" in teardown_text and "read -r -p" in teardown_text, (
+        "teardown_gcp.sh no longer confirms before deleting -- this script permanently destroys "
+        "Firestore data and the Cloud Run service, so it must not run destructively by accident."
+    )

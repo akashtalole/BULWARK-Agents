@@ -345,6 +345,20 @@ export REGION=us-central1
 dashboard can actually call it -- see [`frontend/README.md`](frontend/README.md)
 for details and other hosting options.
 
+To tear everything back down (e.g. for a clean redeploy with no stale
+Firestore data):
+
+```bash
+./deploy/teardown_gcp.sh
+```
+
+Permanently deletes the Cloud Run service, both Cloud Scheduler jobs,
+the Firestore database, and the dashboard's Cloud Storage bucket --
+asks for confirmation first (`--yes` skips the prompt). Leaves the
+Artifact Registry repo, Pub/Sub topics, and the twelve IAM service
+accounts alone, since `setup_gcp.sh` skips recreating those if they
+already exist anyway.
+
 ## Environment variables
 
 | Variable | Purpose | Default |
