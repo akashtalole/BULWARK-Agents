@@ -14,12 +14,20 @@ set -euo pipefail
 PROJECT_ID="${PROJECT_ID:?Set PROJECT_ID, e.g. PROJECT_ID=my-project ./deploy/deploy_cloud_run.sh}"
 REGION="${REGION:-us-central1}"
 SERVICE_NAME="${SERVICE_NAME:-bulwark}"
-SERVICE_ACCOUNT_NAME="${SERVICE_ACCOUNT_NAME:-sa-supervisor}"  # the Cloud Run *ingress* identity; per-agent SAs are enforced in-app
 IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/cloud-run-source-deploy/${SERVICE_NAME}"
 
 echo "==> Building container image: ${IMAGE}"
 gcloud builds submit --tag "${IMAGE}" .
 
+# No --service-account flag below, so this runs as the project's default
+# Compute Engine service account -- the same one setup_gcp.sh grants
+# Firestore/Vertex AI/Pub/Sub access to. Deliberately NOT one of the
+# twelve per-agent service accounts setup_gcp.sh creates (e.g.
+# sa-supervisor, whose whole point is *not* having Firestore access):
+# this is the one process making every agent's actual GCP calls, so it
+# needs to be broad enough for the app to function at all.
+# platform/identity.py's per-agent zero-trust table is what enforces
+# least-privilege at the application level instead.
 echo "==> Deploying to Cloud Run: ${SERVICE_NAME} (${REGION})"
 gcloud run deploy "${SERVICE_NAME}" \
   --image="${IMAGE}" \

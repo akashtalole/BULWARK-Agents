@@ -35,9 +35,34 @@ echo "==> Granting the default Compute Engine service account Cloud Build permis
 # a 403 (storage.objects.get denied): a fresh-project blocker, not
 # specific to this repo, but easy to hit on the very first deploy.
 PROJECT_NUMBER="$(gcloud projects describe "${PROJECT_ID}" --format='value(projectNumber)')"
+COMPUTE_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
 gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
-  --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+  --member="serviceAccount:${COMPUTE_SA}" \
   --role="roles/cloudbuild.builds.builder" --condition=None >/dev/null
+
+echo "==> Granting the same service account the app's own runtime permissions"
+# deploy_cloud_run.sh does not set --service-account, so Cloud Run runs
+# the deployed container as this same default Compute Engine SA --
+# confirmed directly: the app worked when run locally with the
+# operator's own (broadly-privileged) credentials against this project,
+# then failed on Cloud Run itself with the exact same crash shape
+# (an exception during bootstrap_registry()'s first Firestore write),
+# because the runtime identity had none of these roles. This is the
+# fleet's single Cloud Run process making every agent's actual GCP
+# calls -- platform/identity.py's per-agent zero-trust table is
+# enforced in application code, not by giving each of the twelve
+# per-agent service accounts created above their own Cloud Run
+# deployment, so the one identity actually running the container needs
+# to be broad enough for the whole app to function.
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+  --member="serviceAccount:${COMPUTE_SA}" \
+  --role="roles/datastore.user" --condition=None >/dev/null
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+  --member="serviceAccount:${COMPUTE_SA}" \
+  --role="roles/aiplatform.user" --condition=None >/dev/null
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+  --member="serviceAccount:${COMPUTE_SA}" \
+  --role="roles/pubsub.publisher" --condition=None >/dev/null
 
 echo "==> Ensuring the Artifact Registry Docker repository exists"
 # deploy_cloud_run.sh pushes to REGION-docker.pkg.dev/PROJECT_ID/

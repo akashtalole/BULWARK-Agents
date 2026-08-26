@@ -23,6 +23,19 @@ here mechanically and offline instead.
    result with "Invalid database id %28default%29" on every single
    startup. setup_gcp.sh and deploy_cloud_run.sh must agree on the same
    named database, and neither may fall back to "(default)".
+4. deploy_cloud_run.sh sets no `--service-account`, so Cloud Run runs the
+   app as the project's default Compute Engine service account --
+   confirmed via a real Cloud Run crash (a permission error on the first
+   real Firestore/Vertex AI/Pub/Sub call) that setup_gcp.sh must grant
+   that same identity the app's actual runtime permissions
+   (roles/datastore.user, roles/aiplatform.user, roles/pubsub.publisher).
+   None of the twelve per-agent service accounts setup_gcp.sh creates are
+   suitable for this -- sa-supervisor in particular is deliberately
+   Firestore-less by the zero-trust identity model's own design, and the
+   single Cloud Run process makes every agent's actual GCP calls, so its
+   own runtime identity needs to be broad enough for the app to function
+   at all; platform/identity.py's per-agent grant table is what enforces
+   least-privilege at the application level instead.
 """
 
 from __future__ import annotations
@@ -101,3 +114,24 @@ def test_setup_gcp_sh_and_deploy_cloud_run_sh_agree_on_a_named_firestore_databas
         "of how it's passed, and something downstream percent-encodes its parentheses, which Firestore "
         "then rejects with 'Invalid database id %28default%29' on every startup."
     )
+
+
+def test_deploy_cloud_run_sh_sets_no_service_account_flag():
+    deploy_text = _DEPLOY_SCRIPT.read_text()
+    assert "--service-account=" not in deploy_text, (
+        "deploy_cloud_run.sh now sets --service-account, so Cloud Run no longer runs the app as the "
+        "default Compute Engine SA setup_gcp.sh grants runtime permissions to -- if this is deliberate, "
+        "make sure whatever identity is set here actually has roles/datastore.user, "
+        "roles/aiplatform.user, and roles/pubsub.publisher (none of the twelve per-agent service "
+        "accounts setup_gcp.sh creates do; sa-supervisor in particular is deliberately Firestore-less)."
+    )
+
+
+def test_setup_gcp_sh_grants_the_compute_sa_the_apps_runtime_permissions():
+    setup_text = _SETUP_SCRIPT.read_text()
+    for role in ("roles/datastore.user", "roles/aiplatform.user", "roles/pubsub.publisher"):
+        assert f'--role="{role}"' in setup_text, (
+            f"setup_gcp.sh no longer grants {role} to the default Compute Engine service account -- "
+            "confirmed via a real Cloud Run crash that the app runs as that identity (deploy_cloud_run.sh "
+            "sets no --service-account) and fails on its first real GCP call without these roles."
+        )
