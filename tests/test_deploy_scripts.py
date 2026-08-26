@@ -171,3 +171,17 @@ def test_deploy_frontend_sh_auto_detects_the_backend_url_for_the_login_page():
         "without VITE_DEFAULT_BASE_URL, a judge opening the login page has no Base URL configured yet "
         "and /auth/config has nothing to call."
     )
+
+
+def test_deploy_cloud_run_sh_does_not_default_to_a_latest_suffixed_gemini_model():
+    deploy_text = _DEPLOY_SCRIPT.read_text()
+    for var in ("GEMINI_FLASH_MODEL", "GEMINI_PRO_MODEL"):
+        match = re.search(rf"{var}=\$\{{{var}:-([^,}}]+)\}}", deploy_text)
+        assert match, f"deploy_cloud_run.sh no longer sets a default for {var} in --set-env-vars"
+        assert not match.group(1).endswith("-latest"), (
+            f"deploy_cloud_run.sh defaults {var} to {match.group(1)!r} -- confirmed via a real Risk "
+            "Assessor crash landing in the DLQ (\"Publisher model .../gemini-pro-latest was not "
+            "found\") that \"-latest\" suffixes are a Gemini Developer API convention Vertex AI's "
+            "publisher-model catalog doesn't resolve, and this script always sets "
+            "GOOGLE_GENAI_USE_VERTEXAI=true, so its defaults must be versioned Vertex-listed ids."
+        )
