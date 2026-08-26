@@ -337,7 +337,13 @@ export REGION=us-central1
 
 ./deploy/setup_gcp.sh          # APIs, Firestore, Pub/Sub topics + DLQs, 12 per-agent service accounts
 ./deploy/deploy_cloud_run.sh   # build + deploy (scale-to-zero, max-instances=3) + wires Cloud Scheduler to the live URL
+./deploy/deploy_frontend.sh    # (optional) build the dashboard and deploy it to a public Cloud Storage bucket
 ```
+
+`deploy_frontend.sh` prints the dashboard's public URL and the exact
+`BULWARK_CORS_ALLOW_ORIGINS` value to set on the backend so the deployed
+dashboard can actually call it -- see [`frontend/README.md`](frontend/README.md)
+for details and other hosting options.
 
 ## Environment variables
 

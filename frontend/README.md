@@ -51,6 +51,13 @@ on Cloud Run, etc.). It talks to whatever Base URL is configured in the
 browser at runtime, so the same build works against local, staging, or
 the deployed Cloud Run URL without a rebuild.
 
+`../deploy/deploy_frontend.sh` deploys it to a public Cloud Storage
+bucket with zero extra infrastructure (`PROJECT_ID=my-project
+./deploy/deploy_frontend.sh` from the repo root) -- the simplest way to
+get this a real URL without a custom domain or a second Cloud Run
+service. See its own output for the exact public URL and the
+`BULWARK_CORS_ALLOW_ORIGINS` value the backend needs to allow it.
+
 ## CORS
 
 `src/bulwark/config.py`'s `cors_allow_origins` (env var

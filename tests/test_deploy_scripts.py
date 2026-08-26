@@ -41,11 +41,13 @@ here mechanically and offline instead.
 from __future__ import annotations
 
 import re
+import subprocess
 from pathlib import Path
 
 _DEPLOY_DIR = Path(__file__).resolve().parent.parent / "deploy"
 _SETUP_SCRIPT = _DEPLOY_DIR / "setup_gcp.sh"
 _DEPLOY_SCRIPT = _DEPLOY_DIR / "deploy_cloud_run.sh"
+_FRONTEND_DEPLOY_SCRIPT = _DEPLOY_DIR / "deploy_frontend.sh"
 _DISPLAY_NAME_MAX_LENGTH = 100
 _DISPLAY_NAME_PREFIX = "BULWARK: "
 _ENTRY_PATTERN = re.compile(r'\["(sa-[\w-]+)"\]="([^"]*)"')
@@ -135,3 +137,8 @@ def test_setup_gcp_sh_grants_the_compute_sa_the_apps_runtime_permissions():
             "confirmed via a real Cloud Run crash that the app runs as that identity (deploy_cloud_run.sh "
             "sets no --service-account) and fails on its first real GCP call without these roles."
         )
+
+
+def test_deploy_frontend_sh_is_valid_bash():
+    result = subprocess.run(["bash", "-n", str(_FRONTEND_DEPLOY_SCRIPT)], capture_output=True, text=True)
+    assert result.returncode == 0, f"deploy/deploy_frontend.sh has a syntax error:\n{result.stderr}"
