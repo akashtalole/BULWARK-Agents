@@ -198,7 +198,7 @@ export REGION=us-central1
 ```
 
 The script prints the deployed service URL; that's what goes in the
-Devpost "hosted project URL" field. See `docs/demo_video_script.md` for
+Devpost "hosted project URL" field. See `DEMO_VIDEO_SCRIPT.md` for
 how to capture proof of Google Cloud backend execution on video, and
 `README.md`'s "Spin-up instructions" for the full local-first walkthrough
 that needs no cloud project at all.

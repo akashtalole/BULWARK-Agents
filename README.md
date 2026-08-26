@@ -42,7 +42,7 @@ for detailed install/configuration/deployment instructions beyond the
 quick-start below; [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) for every
 workflow and API endpoint with worked examples; [`frontend/README.md`](frontend/README.md)
 for the dashboard's own setup and design notes; and
-[`docs/demo_video_script.md`](docs/demo_video_script.md) for the
+[`DEMO_VIDEO_SCRIPT.md`](DEMO_VIDEO_SCRIPT.md) for the
 ~4-minute demo script, and [`SUBMISSION.md`](SUBMISSION.md) for the
 Devpost submission text.
 
@@ -81,7 +81,7 @@ Devpost submission text.
 |---|---|---|
 | Innovation & Operational Utility | 40% | The fleet acts autonomously end-to-end (screens → extracts → cross-references → decides → tickets, with no human in the loop unless a mandatory gate fires); Contract Intelligence, Concentration Analyzer, Framework Crosswalk, the Offboarding Agent, Executive Risk Digest, and the risk-trend early-warning signal solve real, underserved enterprise pain (manual contract review, hidden portfolio concentration risk, redundant cross-framework evidence collection, untracked data-deletion obligations, 30+ endpoints nobody has time to click through, reactive-only risk detection) rather than adding checklist coverage -- see "Beyond the spec" in `docs/architecture.md` |
 | Architectural Discipline & Tech Stack | 30% | Event-driven decoupling (`tests/test_orchestrator_wiring.py` asserts no agent module imports another), zero-trust identity, a real circuit breaker sharing code with the kill switch, compensating-action rollback, citation-validated anti-hallucination gates -- see "Mechanisms worth reading in the code directly" in `docs/architecture.md` |
-| Demo & Production Readiness | 30% | 146 passing tests requiring zero live credentials (`PYTHONPATH=src pytest -q`), a one-command local spin-up, `deploy/setup_gcp.sh` + `deploy/deploy_cloud_run.sh` for real Cloud Run deployment, and `docs/demo_video_script.md` for the required demo video |
+| Demo & Production Readiness | 30% | 146 passing tests requiring zero live credentials (`PYTHONPATH=src pytest -q`), a one-command local spin-up, `deploy/setup_gcp.sh` + `deploy/deploy_cloud_run.sh` for real Cloud Run deployment, and `DEMO_VIDEO_SCRIPT.md` for the required demo video |
 
 ## What it does
 
@@ -242,11 +242,11 @@ deploy/          setup_gcp.sh, deploy_cloud_run.sh
 docs/            architecture.md (diagram + agent table + event table + API surface + mechanisms)
                  + DIAGRAMS.md (HLD/LLD/DFD/ERD/sequence/state/deployment diagrams, all Mermaid)
                  + SETUP_GUIDE.md (detailed install/config/deployment) + USER_GUIDE.md (every
-                 workflow + API endpoint, worked examples) + demo_video_script.md (the required
-                 ~4-minute demo video, scripted)
+                 workflow + API endpoint, worked examples)
 scripts/         seed_demo_data.py, demo_cli.py
 frontend/        React + Vite + TypeScript dashboard over the API surface above -- see frontend/README.md
 SUBMISSION.md    Devpost submission text, drafted from this README
+DEMO_VIDEO_SCRIPT.md  The required ~4-minute demo video, scripted
 ```
 
 ## Spin-up instructions

@@ -13,8 +13,6 @@ nav:
   - Diagrams: DIAGRAMS.md
   - Setup Guide: SETUP_GUIDE.md
   - User Guide: USER_GUIDE.md
-  - Demo Video Script: demo_video_script.md
-  - Devpost Submission: DEVPOST_SUBMISSION.md
 
 theme:
   name: material
