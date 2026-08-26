@@ -142,3 +142,14 @@ def test_setup_gcp_sh_grants_the_compute_sa_the_apps_runtime_permissions():
 def test_deploy_frontend_sh_is_valid_bash():
     result = subprocess.run(["bash", "-n", str(_FRONTEND_DEPLOY_SCRIPT)], capture_output=True, text=True)
     assert result.returncode == 0, f"deploy/deploy_frontend.sh has a syntax error:\n{result.stderr}"
+
+
+def test_deploy_cloud_run_sh_threads_seed_demo_data_through():
+    deploy_text = _DEPLOY_SCRIPT.read_text()
+    assert "BULWARK_SEED_DEMO_DATA=${BULWARK_SEED_DEMO_DATA:-false}" in deploy_text, (
+        "deploy_cloud_run.sh's --set-env-vars no longer threads BULWARK_SEED_DEMO_DATA through from the "
+        "caller's shell -- confirmed via a real deploy where `BULWARK_SEED_DEMO_DATA=true "
+        "./deploy/deploy_cloud_run.sh` silently deployed with no demo data, because every other var here "
+        "(FIRESTORE_DATABASE, GEMINI_FLASH_MODEL, ...) is threaded through with a ${VAR:-default} "
+        "fallback except this one, which was simply missing from the --set-env-vars list."
+    )
