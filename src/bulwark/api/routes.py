@@ -23,6 +23,7 @@ from bulwark.api.schemas import (
     SubmitQuestionnaireRequest,
     SubmitQuestionnaireResponse,
     TriggerAssessmentRequest,
+    UpdateQuestionnaireRequest,
 )
 from bulwark.config import settings
 from bulwark.platform.auth import AuthenticationError, RateLimitExceeded, authenticate, rate_limiter
@@ -385,6 +386,12 @@ async def submit_questionnaire(
     return SubmitQuestionnaireResponse(**result)
 
 
+@router.get("/questionnaires")
+async def list_questionnaires(x_api_key: str | None = Header(default=None)) -> list[dict]:
+    _authorize(x_api_key)
+    return [vars(q) for q in questionnaire_repo.list(settings.default_tenant)]
+
+
 @router.get("/questionnaires/{questionnaire_id}")
 async def get_questionnaire(questionnaire_id: str, x_api_key: str | None = Header(default=None)) -> dict:
     _authorize(x_api_key)
@@ -393,6 +400,52 @@ async def get_questionnaire(questionnaire_id: str, x_api_key: str | None = Heade
     questionnaire = questionnaire_repo.get(questionnaire_id)
     if questionnaire is None:
         raise HTTPException(status_code=404, detail="questionnaire not found")
+    answers = answer_repo.list_for_questionnaire(questionnaire_id)
+    return {**vars(questionnaire), "answers": [vars(a) for a in answers]}
+
+
+@router.patch("/questionnaires/{questionnaire_id}")
+async def update_questionnaire(
+    questionnaire_id: str, payload: UpdateQuestionnaireRequest, x_api_key: str | None = Header(default=None)
+) -> dict:
+    """Manual edit, not a re-run of the Attest loop: renames the buyer
+    and/or replaces the question set. `questions` is matched against
+    existing answers by exact text -- a question whose text is unchanged
+    keeps its existing answer untouched; a genuinely new question gets a
+    fresh `needs_human` answer (see AnswerRepo.create_manual) since
+    nothing here calls the LLM; a question that's gone has its answer
+    deleted with it."""
+    _authorize(x_api_key)
+    from bulwark.platform.models import answer_repo
+
+    questionnaire = questionnaire_repo.get(questionnaire_id)
+    if questionnaire is None:
+        raise HTTPException(status_code=404, detail="questionnaire not found")
+
+    patch: dict[str, Any] = {}
+    if payload.buyer is not None:
+        patch["buyer"] = payload.buyer
+
+    if payload.questions is not None:
+        existing_answers = answer_repo.list_for_questionnaire(questionnaire_id)
+        existing_questions = {a.question for a in existing_answers}
+        new_questions = set(payload.questions)
+
+        for answer in existing_answers:
+            if answer.question not in new_questions:
+                answer_repo.delete(answer.answer_id)
+        for question in payload.questions:
+            if question not in existing_questions:
+                answer_repo.create_manual(questionnaire_id, question)
+
+        remaining = answer_repo.list_for_questionnaire(questionnaire_id)
+        patch["total_questions"] = len(remaining)
+        patch["auto_answered"] = sum(1 for a in remaining if a.status == "auto")
+        patch["abstained"] = sum(1 for a in remaining if a.status == "needs_human")
+
+    if patch:
+        questionnaire = questionnaire_repo.update(questionnaire_id, **patch)
+
     answers = answer_repo.list_for_questionnaire(questionnaire_id)
     return {**vars(questionnaire), "answers": [vars(a) for a in answers]}
 

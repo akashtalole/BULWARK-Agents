@@ -72,3 +72,12 @@ class ConfirmDataDeletionRequest(BaseModel):
 
 class LoginRequest(BaseModel):
     password: str = Field(..., min_length=1, max_length=200)
+
+
+class UpdateQuestionnaireRequest(BaseModel):
+    buyer: str | None = Field(default=None, min_length=1, max_length=200)
+    # A full replacement of the question set, not a delta -- matches
+    # questions to existing answers by exact text so unchanged questions
+    # keep their answer; anything new is added unanswered (needs_human),
+    # anything dropped has its answer removed. See update_questionnaire.
+    questions: list[str] | None = Field(default=None, min_length=1, max_length=100)

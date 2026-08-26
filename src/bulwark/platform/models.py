@@ -690,6 +690,25 @@ class AnswerRepo:
         self._store.set(answer.answer_id, asdict(answer))
         return answer
 
+    def create_manual(self, questionnaire_id: str, question: str) -> Answer:
+        """A question added by hand via PATCH /questionnaires/{id} -- no
+        LLM call, so it starts exactly like a low-confidence abstention
+        (`needs_human`) rather than claiming an answer nobody gave it."""
+        return self.create(
+            Answer(
+                answer_id=_new_id("ans"),
+                questionnaire_id=questionnaire_id,
+                question=question,
+                answer="",
+                confidence=0.0,
+                citations=[],
+                status="needs_human",
+            )
+        )
+
+    def delete(self, answer_id: str) -> None:
+        self._store.delete(answer_id)
+
     def list_for_questionnaire(self, questionnaire_id: str) -> list[Answer]:
         return [Answer(**d) for d in self._store.list(lambda d: d["questionnaire_id"] == questionnaire_id)]
 

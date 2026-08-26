@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useApi, ApiError } from "../lib/api";
+import { useSort } from "../lib/sort";
+import type { Finding } from "../lib/types";
 import {
   Card,
   Table,
@@ -27,12 +29,22 @@ export default function Findings() {
   const api = useApi();
   const [params] = useSearchParams();
   const [status, setStatus] = useState("");
+  const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string | null>(params.get("highlight"));
+  const sort = useSort<Finding>();
 
   const findings = useQuery({
     queryKey: ["findings", status],
     queryFn: () => api.listFindings(status || undefined),
   });
+
+  const rows = findings.data
+    ? sort.apply(
+        findings.data.filter(
+          (f) => f.control_ref.toLowerCase().includes(search.toLowerCase()) || f.vendor_id.includes(search),
+        ),
+      )
+    : [];
 
   useEffect(() => {
     const h = params.get("highlight");
@@ -51,30 +63,41 @@ export default function Findings() {
             Global, filterable — every finding cites the evidence/assertions that justify it.
           </p>
         </div>
-        <Select
-          value={status}
-          onChange={setStatus}
-          options={STATUS_OPTIONS.map((s) => ({ value: s, label: s || "all statuses" }))}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <Input value={search} onChange={setSearch} placeholder="Search control or vendor id…" className="w-56" />
+          <Select
+            value={status}
+            onChange={setStatus}
+            options={STATUS_OPTIONS.map((s) => ({ value: s, label: s || "all statuses" }))}
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
         <Card className="xl:col-span-3">
-          {findings.data!.length === 0 ? (
+          {rows.length === 0 ? (
             <EmptyBlock label="No findings match this filter." />
           ) : (
             <Table>
               <thead>
                 <tr>
-                  <Th>Control</Th>
-                  <Th>Vendor</Th>
-                  <Th>Status</Th>
-                  <Th>Risk</Th>
+                  <Th onClick={() => sort.toggle("control_ref")} sortDirection={sort.directionFor("control_ref")}>
+                    Control
+                  </Th>
+                  <Th onClick={() => sort.toggle("vendor_id")} sortDirection={sort.directionFor("vendor_id")}>
+                    Vendor
+                  </Th>
+                  <Th onClick={() => sort.toggle("status")} sortDirection={sort.directionFor("status")}>
+                    Status
+                  </Th>
+                  <Th onClick={() => sort.toggle("residual_risk")} sortDirection={sort.directionFor("residual_risk")}>
+                    Risk
+                  </Th>
                   <Th>Human</Th>
                 </tr>
               </thead>
               <tbody>
-                {findings.data!.map((f) => (
+                {rows.map((f) => (
                   <Tr
                     key={f.finding_id}
                     onClick={() => setSelected(f.finding_id)}

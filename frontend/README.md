@@ -99,20 +99,45 @@ at a deployed backend:
 export BULWARK_CORS_ALLOW_ORIGINS="http://localhost:5173,https://your-dashboard.example.com"
 ```
 
+## Theme, search/filter/sort, and questionnaire editing
+
+**Light/dark theme** (the sun/moon toggle in the header) needs zero
+per-component styling — every page already uses Tailwind's standard
+`zinc`/`indigo`/`emerald`/`rose`/`amber`/`blue` classes, which Tailwind
+v4 compiles to `var(--color-*)` references under the hood. `index.css`
+overrides those same variables under `[data-theme="light"]` (a mirror of
+the dark-mode zinc ramp, plus darkened accent-color text stops for
+legibility on a light background) — see its comment for the reasoning.
+`lib/theme.tsx` is the `ThemeProvider`/`useTheme()` pair that sets the
+attribute and persists the choice; `index.html` has a small inline
+script that applies it before React mounts, so there's no flash of the
+wrong theme on load.
+
+**Search/filter/sort** on the Vendors, Findings, and Questionnaires
+tables is client-side over already-fetched data (`lib/sort.ts`'s
+`useSort()` hook, reused across all three) — click a column header to
+sort by it, click again to reverse.
+
+**Editing a questionnaire** (rename the buyer, add/remove questions) is
+on its detail page, via `PATCH /questionnaires/{id}`. It's a manual
+edit, not a re-run of the Attest loop: a question whose text didn't
+change keeps its existing answer untouched, a genuinely new question
+gets a blank `needs_human` answer (nothing here calls the LLM), and a
+dropped question's answer is deleted with it. The Questionnaires list
+page itself now comes from a real `GET /questionnaires` (added
+alongside this), not the localStorage-remembered-ids workaround the
+next bullet used to describe.
+
 ## What's deliberately not here
 
-- **No questionnaire list endpoint.** `api/routes.py` has no `GET
-  /questionnaires` by design (see its module docstring) — the
-  dashboard remembers submitted questionnaire/trace ids in
-  `localStorage` per browser (`src/lib/recent.ts`) rather than
-  inventing a backend endpoint that doesn't exist. Paste an id
-  directly if you have one from elsewhere.
 - **No multi-user auth, just an optional single password.** Same model
   as the rest of BULWARK — this is a hackathon build's Agent Gateway,
   not a multi-tenant SaaS product. The X-API-Key every request carries
   is exactly the header every other caller (`curl`, `demo_cli.py`)
   uses; the login page (see above) is a friendlier way to obtain that
-  one key, not a second user system.
+  one key, not a second user system. See
+  [`docs/firebase_auth_feasibility.md`](../docs/firebase_auth_feasibility.md)
+  for what real per-user login (Firebase Auth) would actually take.
 - **No offline/optimistic writes.** Every mutation round-trips to the
   Agent Gateway and re-fetches; there is no local state that could
   drift from what the fleet actually did.

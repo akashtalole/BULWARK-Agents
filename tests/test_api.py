@@ -108,6 +108,57 @@ def test_unknown_questionnaire_is_404(client):
     assert client.get("/questionnaires/quest_missing", headers={"X-API-Key": API_KEY}).status_code == 404
 
 
+def test_list_questionnaires_includes_ones_just_created(client):
+    resp = client.post("/questionnaires", headers={"X-API-Key": API_KEY}, json={"buyer": "List Test Buyer", "questions": ["Do you enforce MFA?"]})
+    qid = resp.json()["questionnaire_id"]
+
+    listing = client.get("/questionnaires", headers={"X-API-Key": API_KEY})
+    assert listing.status_code == 200
+    assert any(q["questionnaire_id"] == qid and q["buyer"] == "List Test Buyer" for q in listing.json())
+
+
+def test_update_questionnaire_renames_buyer_without_touching_answers(client):
+    from bulwark.platform.models import Answer, answer_repo, questionnaire_repo
+
+    q = questionnaire_repo.create("Old Buyer Name", "acme-eu")
+    answer_repo.create(Answer(answer_id="ans_rename_test", questionnaire_id=q.questionnaire_id, question="Q1", answer="Yes", confidence=0.9, citations=[], status="auto"))
+
+    resp = client.patch(f"/questionnaires/{q.questionnaire_id}", headers={"X-API-Key": API_KEY}, json={"buyer": "New Buyer Name"})
+    assert resp.status_code == 200
+    assert resp.json()["buyer"] == "New Buyer Name"
+    assert len(resp.json()["answers"]) == 1
+    assert resp.json()["answers"][0]["answer_id"] == "ans_rename_test"
+
+
+def test_update_questionnaire_questions_keeps_matched_adds_new_removes_dropped(client):
+    from bulwark.platform.models import Answer, answer_repo, questionnaire_repo
+
+    q = questionnaire_repo.create("Edit Questions Buyer", "acme-eu")
+    answer_repo.create(Answer(answer_id="ans_keep", questionnaire_id=q.questionnaire_id, question="Keep this one", answer="Yes", confidence=0.9, citations=["CC6.1"], status="auto"))
+    answer_repo.create(Answer(answer_id="ans_drop", questionnaire_id=q.questionnaire_id, question="Drop this one", answer="No", confidence=0.1, citations=[], status="needs_human"))
+
+    resp = client.patch(
+        f"/questionnaires/{q.questionnaire_id}",
+        headers={"X-API-Key": API_KEY},
+        json={"questions": ["Keep this one", "A brand new question"]},
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["total_questions"] == 2
+    answers_by_question = {a["question"]: a for a in body["answers"]}
+    assert set(answers_by_question) == {"Keep this one", "A brand new question"}
+    # The kept question's original answer/citations survive untouched.
+    assert answers_by_question["Keep this one"]["answer_id"] == "ans_keep"
+    assert answers_by_question["Keep this one"]["citations"] == ["CC6.1"]
+    # The new question has no answer yet -- nothing here calls the LLM.
+    assert answers_by_question["A brand new question"]["status"] == "needs_human"
+
+
+def test_update_unknown_questionnaire_is_404(client):
+    resp = client.patch("/questionnaires/quest_missing", headers={"X-API-Key": API_KEY}, json={"buyer": "X"})
+    assert resp.status_code == 404
+
+
 def test_evidence_collector_tick_needs_no_credentials(client):
     """Deterministic -- must work even with orchestration functions unset."""
     routes.set_orchestration_fns(None, None, None)

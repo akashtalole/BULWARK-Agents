@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useApi, ApiError } from "../lib/api";
+import { useSort } from "../lib/sort";
+import type { Vendor } from "../lib/types";
 import {
   Card,
   Table,
@@ -21,14 +23,17 @@ import {
 import { Plus, Upload } from "lucide-react";
 
 const DOC_TYPES = ["SOC2", "ISO", "pen-test", "DPA", "MSA", "contract", "SLA", "order form"];
+const TIERS = ["critical", "high", "moderate", "low"];
 
 export default function Vendors() {
   const api = useApi();
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const [tierFilter, setTierFilter] = useState("");
   const [showRegister, setShowRegister] = useState(false);
   const [showSubmit, setShowSubmit] = useState(false);
+  const sort = useSort<Vendor>();
 
   const vendors = useQuery({ queryKey: ["vendors"], queryFn: () => api.listVendors() });
 
@@ -60,7 +65,11 @@ export default function Vendors() {
   if (vendors.isLoading) return <LoadingBlock label="Loading vendors…" />;
   if (vendors.isError) return <ErrorBlock message={(vendors.error as Error).message} />;
 
-  const filtered = vendors.data!.filter((v) => v.name.toLowerCase().includes(search.toLowerCase()));
+  const filtered = sort.apply(
+    vendors.data!.filter(
+      (v) => v.name.toLowerCase().includes(search.toLowerCase()) && (!tierFilter || v.tier === tierFilter),
+    ),
+  );
 
   return (
     <div className="space-y-6">
@@ -166,8 +175,18 @@ export default function Vendors() {
       )}
 
       <Card>
-        <div className="mb-3">
+        <div className="mb-3 flex flex-wrap items-center gap-2">
           <Input value={search} onChange={setSearch} placeholder="Search vendors…" className="w-64" />
+          <Select
+            value={tierFilter}
+            onChange={setTierFilter}
+            options={[{ value: "", label: "All tiers" }, ...TIERS.map((t) => ({ value: t, label: t }))]}
+          />
+          {(search || tierFilter) && (
+            <span className="text-xs text-zinc-500">
+              {filtered.length} of {vendors.data!.length}
+            </span>
+          )}
         </div>
         {filtered.length === 0 ? (
           <EmptyBlock label="No vendors match." />
@@ -175,11 +194,27 @@ export default function Vendors() {
           <Table>
             <thead>
               <tr>
-                <Th>Name</Th>
-                <Th>Tier</Th>
-                <Th>Status</Th>
-                <Th>Blind window</Th>
-                <Th>Last assessed</Th>
+                <Th onClick={() => sort.toggle("name")} sortDirection={sort.directionFor("name")}>
+                  Name
+                </Th>
+                <Th onClick={() => sort.toggle("tier")} sortDirection={sort.directionFor("tier")}>
+                  Tier
+                </Th>
+                <Th onClick={() => sort.toggle("status")} sortDirection={sort.directionFor("status")}>
+                  Status
+                </Th>
+                <Th
+                  onClick={() => sort.toggle("blind_window_days")}
+                  sortDirection={sort.directionFor("blind_window_days")}
+                >
+                  Blind window
+                </Th>
+                <Th
+                  onClick={() => sort.toggle("last_assessed_at")}
+                  sortDirection={sort.directionFor("last_assessed_at")}
+                >
+                  Last assessed
+                </Th>
               </tr>
             </thead>
             <tbody>

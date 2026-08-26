@@ -14,9 +14,12 @@ import {
   Settings as SettingsIcon,
   Power,
   LogOut,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useApi } from "../lib/api";
 import { useSettings } from "../lib/settings";
+import { useTheme } from "../lib/theme";
 import { Badge } from "./ui";
 
 const NAV = [
@@ -35,6 +38,7 @@ export default function Layout() {
   const api = useApi();
   const navigate = useNavigate();
   const { setAuthenticated } = useSettings();
+  const { theme, toggleTheme } = useTheme();
 
   const health = useQuery({
     queryKey: ["fleet-health"],
@@ -138,6 +142,13 @@ export default function Layout() {
             {health.data && health.data.dlq_depth > 0 && (
               <Badge tone="amber">{health.data.dlq_depth} in DLQ</Badge>
             )}
+            <button
+              onClick={toggleTheme}
+              title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+              className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-zinc-100"
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
           </div>
         </header>
 
