@@ -1,0 +1,18 @@
+# Keeps the Cloud Build/Docker build context small and reproducible --
+# without this, `gcloud builds submit --tag ... .` would upload local
+# venvs, node_modules, and build artifacts that get reinstalled/rebuilt
+# inside the image anyway.
+.git
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+
+frontend/node_modules
+frontend/dist
+
+docs
+tests
+*.md
+.env
+.env.example

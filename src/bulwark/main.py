@@ -8,9 +8,11 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from bulwark.api.routes import router, set_orchestration_fns
 from bulwark.config import settings
@@ -82,3 +84,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(router)
+
+# Serves the dashboard (frontend/) built and copied into ./static by the
+# Dockerfile's multi-stage build -- see its comment. Registered after
+# include_router() above so every API route matches first; anything left
+# over falls through to this mount. html=True's directory-index behavior
+# is all this needs for SPA routing: the dashboard uses HashRouter, so
+# the browser only ever requests this one real path ("/") -- every other
+# "route" is a URL fragment the server never sees, so there's no
+# "/vendors/123 loaded directly" case to add a wildcard fallback for.
+# Absent entirely in local dev (no Docker build ran), which is fine --
+# the dashboard runs from `npm run dev` on its own port instead then.
+_STATIC_DIR = Path(__file__).resolve().parent.parent.parent / "static"
+if _STATIC_DIR.is_dir():
+    app.mount("/", StaticFiles(directory=_STATIC_DIR, html=True), name="dashboard")

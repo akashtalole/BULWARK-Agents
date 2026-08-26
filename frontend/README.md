@@ -45,18 +45,27 @@ npm run build     # outputs to dist/
 npm run preview   # serve the production build locally
 ```
 
-`dist/` is a static site — serve it from any static host (Cloud Storage
-+ a load balancer, Firebase Hosting, Vercel, a `nginx` sidecar container
-on Cloud Run, etc.). It talks to whatever Base URL is configured in the
-browser at runtime, so the same build works against local, staging, or
-the deployed Cloud Run URL without a rebuild.
+`dist/` is a static site — serve it from any static host. It talks to
+whatever Base URL is configured, so the same build works against local,
+staging, or a deployed backend without a rebuild.
 
-`../deploy/deploy_frontend.sh` deploys it to a public Cloud Storage
-bucket with zero extra infrastructure (`PROJECT_ID=my-project
-./deploy/deploy_frontend.sh` from the repo root) -- the simplest way to
-get this a real URL without a custom domain or a second Cloud Run
-service. See its own output for the exact public URL and the
-`BULWARK_CORS_ALLOW_ORIGINS` value the backend needs to allow it.
+**Default: fullstack on Cloud Run, one URL.** `../Dockerfile` is a
+multi-stage build: it runs this exact `npm run build` in its own stage,
+then copies `dist/` into the same image as the backend. `main.py` mounts
+it at `/`, so `../deploy/deploy_cloud_run.sh` alone deploys both the API
+and this dashboard, same-origin, on the one Cloud Run URL -- no
+`BULWARK_CORS_ALLOW_ORIGINS` configuration needed for the dashboard's
+own calls, and no Base URL to set: it defaults to `""` (same-origin) in
+this build, not `localhost:8080` (see `lib/settings.tsx`).
+
+**Alternative: hosted separately.** `../deploy/deploy_frontend.sh`
+builds and deploys this same code to a public Cloud Storage bucket
+instead (`PROJECT_ID=my-project ./deploy/deploy_frontend.sh` from the
+repo root) -- useful if you want the dashboard on its own URL/cadence,
+decoupled from the backend's deploys. Since that IS cross-origin from
+the backend, its output prints the exact `BULWARK_CORS_ALLOW_ORIGINS`
+value the backend needs to allow it, and it bakes the backend's Cloud
+Run URL in as the Base URL at build time (`VITE_DEFAULT_BASE_URL`).
 
 ## Login page
 

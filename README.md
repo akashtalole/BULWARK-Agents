@@ -337,13 +337,25 @@ export REGION=us-central1
 
 ./deploy/setup_gcp.sh          # APIs, Firestore, Pub/Sub topics + DLQs, 12 per-agent service accounts
 ./deploy/deploy_cloud_run.sh   # build + deploy (scale-to-zero, max-instances=3) + wires Cloud Scheduler to the live URL
-./deploy/deploy_frontend.sh    # (optional) build the dashboard and deploy it to a public Cloud Storage bucket
 ```
 
-`deploy_frontend.sh` prints the dashboard's public URL and the exact
-`BULWARK_CORS_ALLOW_ORIGINS` value to set on the backend so the deployed
-dashboard can actually call it -- see [`frontend/README.md`](frontend/README.md)
-for details and other hosting options.
+That's it -- `deploy_cloud_run.sh` deploys a **fullstack** app. The
+`Dockerfile` is a multi-stage build: it builds `frontend/` with `npm run
+build` in its own stage, then copies the result into the same image as
+the backend. `main.py` mounts it at `/`, so the one Cloud Run URL serves
+both the API and the dashboard, same-origin -- no separate Cloud Storage
+bucket, no `BULWARK_CORS_ALLOW_ORIGINS` configuration needed for the
+dashboard's own calls (only for other callers on a different origin).
+
+```bash
+./deploy/deploy_frontend.sh    # (optional) host the SAME dashboard separately, on a public Cloud Storage bucket
+```
+
+Still available if you'd rather decouple the dashboard's hosting from
+the backend's deploy cadence (its own URL, independent of Cloud Run) --
+prints the exact `BULWARK_CORS_ALLOW_ORIGINS` value needed in that case,
+since a GCS-hosted dashboard IS cross-origin from the backend. See
+[`frontend/README.md`](frontend/README.md) for details.
 
 To tear everything back down (e.g. for a clean redeploy with no stale
 Firestore data):

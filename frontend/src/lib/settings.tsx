@@ -4,10 +4,19 @@ const BASE_URL_KEY = "bulwark.baseUrl";
 const API_KEY_KEY = "bulwark.apiKey";
 const AUTHENTICATED_KEY = "bulwark.authenticated";
 
-// Baked in at build time by deploy/deploy_frontend.sh (see vite-env.d.ts) so
-// a deployed dashboard defaults to its own Cloud Run backend instead of
-// localhost -- falls back to localhost for local dev, where it's unset.
-const DEFAULT_BASE_URL = import.meta.env.VITE_DEFAULT_BASE_URL || "http://localhost:8080";
+// Three ways this resolves, in order:
+// 1. VITE_DEFAULT_BASE_URL, baked in at build time by deploy/deploy_frontend.sh
+//    (see vite-env.d.ts) -- a GCS-hosted dashboard defaults to its own,
+//    separately-deployed Cloud Run backend instead of localhost.
+// 2. "" (same-origin/relative fetches), for a production build with no
+//    override -- this is the fullstack-on-Cloud-Run case, where the
+//    Dockerfile bakes this exact build into the same image and process
+//    that serves the API, so the dashboard's own backend is always
+//    "wherever this page came from." See main.py's StaticFiles mount.
+// 3. localhost:8080, only in `npm run dev` (import.meta.env.DEV), where
+//    the dashboard and a locally-running backend are two separate processes.
+const DEFAULT_BASE_URL =
+  import.meta.env.VITE_DEFAULT_BASE_URL || (import.meta.env.DEV ? "http://localhost:8080" : "");
 const DEFAULT_API_KEY = "demo-key";
 
 interface SettingsContextValue {
