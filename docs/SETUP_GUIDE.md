@@ -165,8 +165,8 @@ either `export` the values yourself or run under `dotenv run`).
 | `GOOGLE_API_KEY` | Gemini API key (credential Path A) | unset |
 | `GOOGLE_CLOUD_PROJECT` | GCP project id (credential Path B, and/or Firestore/Pub/Sub) | unset |
 | `GOOGLE_GENAI_USE_VERTEXAI` | Route Gemini calls through Vertex AI instead of the Gemini API | `false` |
-| `GEMINI_FLASH_MODEL` | Model id for the six Flash-backed agents | `gemini-flash-latest` |
-| `GEMINI_PRO_MODEL` | Model id for Risk Assessor (the one agent on Pro) | `gemini-pro-latest` |
+| `GEMINI_FLASH_MODEL` | Model id for the seven Flash-backed agents | `gemini-3.5-flash` (GA) |
+| `GEMINI_PRO_MODEL` | Model id for Risk Assessor (the one agent on Pro) | `gemini-3.1-pro-preview` (preview -- no GA Gemini 3.5+ Pro model exists yet; override if your project lacks allowlist access) |
 | `USE_FIRESTORE` | Use Firestore instead of in-memory dict stores | `true` once `GOOGLE_CLOUD_PROJECT` is set, otherwise `false` |
 | `FIRESTORE_DATABASE` | Firestore database id -- use a named database (`deploy/setup_gcp.sh` creates one called `bulwark`), never the literal `(default)`: confirmed via a real Cloud Run crash that the Python client resolves `(default)` to that literal string either way, and something downstream percent-encodes its parentheses, which Firestore then rejects | `bulwark` |
 | `USE_PUBSUB` | Also mirror every event onto real Pub/Sub topics (in-process dispatch always happens regardless) | `false` |

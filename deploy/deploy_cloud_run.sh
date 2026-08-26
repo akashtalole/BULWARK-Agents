@@ -13,15 +13,21 @@
 # Set BULWARK_UI_PASSWORD to gate the dashboard (deploy_frontend.sh) behind
 # a login page -- unset (the default) means no login page, same as today.
 #
-# GEMINI_FLASH_MODEL/GEMINI_PRO_MODEL default to versioned ids
-# (gemini-2.5-flash / gemini-2.5-pro) here, NOT the "-latest" aliases
-# config.py itself defaults to -- confirmed via a real Risk Assessor
-# crash landing in the DLQ with "Publisher model
-# .../models/gemini-pro-latest was not found": "-latest" suffixes are a
-# Gemini Developer API (GOOGLE_API_KEY) convention that Vertex AI's
-# publisher-model catalog doesn't resolve, and this script always sets
-# GOOGLE_GENAI_USE_VERTEXAI=true above. If gemini-2.5-* is retired,
-# override with a current Vertex-listed id (see
+# GEMINI_FLASH_MODEL/GEMINI_PRO_MODEL default to explicit versioned ids
+# here (matching config.py's own defaults), NOT "-latest" aliases --
+# confirmed via a real Risk Assessor crash landing in the DLQ with
+# "Publisher model .../models/gemini-pro-latest was not found":
+# "-latest" suffixes are a Gemini Developer API (GOOGLE_API_KEY)
+# convention that Vertex AI's publisher-model catalog doesn't resolve,
+# and this script always sets GOOGLE_GENAI_USE_VERTEXAI=true above.
+#
+# gemini-3.5-flash is GA on Vertex AI -- satisfies the hackathon's
+# Gemini 3.5+ requirement with no allowlist risk. gemini-3.1-pro-preview
+# is the newest Pro-tier model available at all as of this build (there
+# is no GA Gemini 3.5+ Pro yet); it's preview and may require allowlist
+# access on your project -- if Risk Assessor's calls fail with a 403/404
+# on it, override GEMINI_PRO_MODEL with whatever Pro-tier id your
+# project actually has access to (see
 # https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models).
 set -euo pipefail
 
@@ -47,7 +53,7 @@ gcloud run deploy "${SERVICE_NAME}" \
   --image="${IMAGE}" \
   --project="${PROJECT_ID}" \
   --region="${REGION}" \
-  --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_GENAI_USE_VERTEXAI=true,USE_FIRESTORE=true,FIRESTORE_DATABASE=${FIRESTORE_DATABASE:-bulwark},USE_PUBSUB=${USE_PUBSUB:-true},BULWARK_ENVIRONMENT=cloud-run,GEMINI_FLASH_MODEL=${GEMINI_FLASH_MODEL:-gemini-2.5-flash},GEMINI_PRO_MODEL=${GEMINI_PRO_MODEL:-gemini-2.5-pro},BULWARK_API_KEYS=${BULWARK_API_KEYS:-demo-key},BULWARK_SEED_DEMO_DATA=${BULWARK_SEED_DEMO_DATA:-false},BULWARK_UI_PASSWORD=${BULWARK_UI_PASSWORD:-}" \
+  --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_GENAI_USE_VERTEXAI=true,USE_FIRESTORE=true,FIRESTORE_DATABASE=${FIRESTORE_DATABASE:-bulwark},USE_PUBSUB=${USE_PUBSUB:-true},BULWARK_ENVIRONMENT=cloud-run,GEMINI_FLASH_MODEL=${GEMINI_FLASH_MODEL:-gemini-3.5-flash},GEMINI_PRO_MODEL=${GEMINI_PRO_MODEL:-gemini-3.1-pro-preview},BULWARK_API_KEYS=${BULWARK_API_KEYS:-demo-key},BULWARK_SEED_DEMO_DATA=${BULWARK_SEED_DEMO_DATA:-false},BULWARK_UI_PASSWORD=${BULWARK_UI_PASSWORD:-}" \
   --min-instances=0 \
   --max-instances="${MAX_INSTANCES:-3}" \
   --cpu=1 \

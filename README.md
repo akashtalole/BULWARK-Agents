@@ -54,7 +54,7 @@ Devpost submission text.
 
 | Requirement | This build |
 |---|---|
-| Gemini 3.5+ via Gemini API or Vertex AI | `GEMINI_FLASH_MODEL` / `GEMINI_PRO_MODEL` resolve to `gemini-flash-latest` / `gemini-pro-latest` (`src/bulwark/config.py`) -- both Google's rolling aliases for the current-generation model, callable via either the Gemini API (`GOOGLE_API_KEY`) or Vertex AI (`GOOGLE_GENAI_USE_VERTEXAI=true`), see "Configure Gemini" below |
+| Gemini 3.5+ via Gemini API or Vertex AI | `GEMINI_FLASH_MODEL` / `GEMINI_PRO_MODEL` default to `gemini-3.5-flash` / `gemini-3.1-pro-preview` (`src/bulwark/config.py`), callable via either the Gemini API (`GOOGLE_API_KEY`) or Vertex AI (`GOOGLE_GENAI_USE_VERTEXAI=true`), see "Configure Gemini" below. `gemini-3.5-flash` is GA; there's no GA Gemini 3.5+ Pro model yet, so Risk Assessor's Pro tier runs the newest available Pro generation, `gemini-3.1-pro-preview` (preview -- override `GEMINI_PRO_MODEL` if your project lacks allowlist access to it) |
 | A Google Agent Framework | [Google ADK](https://github.com/google/adk-python) (`google-adk`) -- every agent is an ADK `LlmAgent` (or, for the three deliberately non-LLM agents, plain Python called the same way); `agents/orchestrator.py` runs them through ADK `Runner`s |
 | A Google Cloud infrastructure service | **Cloud Run** (`deploy/deploy_cloud_run.sh`, scale-to-zero), **Firestore** (`platform/store.py`, live when `GOOGLE_CLOUD_PROJECT` is set), **Pub/Sub** (`platform/event_bus.py`, mirrored live when `USE_PUBSUB=true`) -- all three, not just one |
 
@@ -397,7 +397,7 @@ already exist anyway.
 | `GOOGLE_API_KEY` | Gemini API key (Path A) | unset |
 | `GOOGLE_CLOUD_PROJECT` | GCP project (Path B / Firestore / Pub/Sub) | unset |
 | `GOOGLE_GENAI_USE_VERTEXAI` | Use Vertex AI instead of the Gemini API | `false` |
-| `GEMINI_FLASH_MODEL` / `GEMINI_PRO_MODEL` | Model ids | `gemini-flash-latest` / `gemini-pro-latest` |
+| `GEMINI_FLASH_MODEL` / `GEMINI_PRO_MODEL` | Model ids | `gemini-3.5-flash` / `gemini-3.1-pro-preview` |
 | `USE_FIRESTORE` | Use Firestore instead of in-memory stores | `true` if `GOOGLE_CLOUD_PROJECT` is set |
 | `USE_PUBSUB` | Also mirror events onto real Pub/Sub topics | `false` |
 | `BULWARK_API_KEYS` | Comma-separated Agent Gateway allowlist | `demo-key` |

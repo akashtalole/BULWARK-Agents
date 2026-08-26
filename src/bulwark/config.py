@@ -21,12 +21,23 @@ def _bool_env(name: str, default: bool) -> bool:
 
 @dataclass(frozen=True)
 class Settings:
-    # Two models, deliberately: Flash for the six workhorse agents, Pro
+    # Two models, deliberately: Flash for the seven LLM-backed workhorse
+    # agents (the other four are deterministic, no LLM at all), Pro
     # reserved for Risk Assessor's final cross-referencing reasoning --
     # the hackathon's own cost guidance ("reserve Pro for complex final
     # reasoning") applied literally, not just cited.
-    gemini_flash_model: str = os.environ.get("GEMINI_FLASH_MODEL", "gemini-flash-latest")
-    gemini_pro_model: str = os.environ.get("GEMINI_PRO_MODEL", "gemini-pro-latest")
+    #
+    # Pinned to explicit Gemini 3.5+ ids, not "-latest" aliases (see
+    # deploy_cloud_run.sh for why: Vertex AI's publisher-model catalog
+    # doesn't resolve those). gemini-3.5-flash is GA on both the Gemini
+    # Developer API and Vertex AI. There is no GA Gemini 3.5+ Pro model
+    # yet as of this build -- gemini-3.1-pro-preview is the newest Pro
+    # generation available, but it's preview/allowlist-gated, so a
+    # project without access to it will get a real error from Risk
+    # Assessor, not a silent fallback; override GEMINI_PRO_MODEL if that
+    # happens on your project.
+    gemini_flash_model: str = os.environ.get("GEMINI_FLASH_MODEL", "gemini-3.5-flash")
+    gemini_pro_model: str = os.environ.get("GEMINI_PRO_MODEL", "gemini-3.1-pro-preview")
     has_llm_credentials: bool = bool(
         os.environ.get("GOOGLE_API_KEY")
         or (
