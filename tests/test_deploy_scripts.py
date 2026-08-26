@@ -49,6 +49,7 @@ _SETUP_SCRIPT = _DEPLOY_DIR / "setup_gcp.sh"
 _DEPLOY_SCRIPT = _DEPLOY_DIR / "deploy_cloud_run.sh"
 _FRONTEND_DEPLOY_SCRIPT = _DEPLOY_DIR / "deploy_frontend.sh"
 _TEARDOWN_SCRIPT = _DEPLOY_DIR / "teardown_gcp.sh"
+_SEED_LIVE_SCRIPT = Path(__file__).resolve().parent.parent / "scripts" / "seed_live_demo_data.sh"
 _DISPLAY_NAME_MAX_LENGTH = 100
 _DISPLAY_NAME_PREFIX = "BULWARK: "
 _ENTRY_PATTERN = re.compile(r'\["(sa-[\w-]+)"\]="([^"]*)"')
@@ -215,4 +216,35 @@ def test_teardown_gcp_sh_requires_confirmation_unless_yes_is_passed():
     assert "--yes" in teardown_text and "read -r -p" in teardown_text, (
         "teardown_gcp.sh no longer confirms before deleting -- this script permanently destroys "
         "Firestore data and the Cloud Run service, so it must not run destructively by accident."
+    )
+
+
+def test_seed_live_demo_data_sh_is_valid_bash():
+    result = subprocess.run(["bash", "-n", str(_SEED_LIVE_SCRIPT)], capture_output=True, text=True)
+    assert result.returncode == 0, f"scripts/seed_live_demo_data.sh has a syntax error:\n{result.stderr}"
+
+
+def test_seed_live_demo_data_sh_targets_firestore_not_in_memory():
+    text = _SEED_LIVE_SCRIPT.read_text()
+    assert "USE_FIRESTORE=true" in text, (
+        "scripts/seed_live_demo_data.sh no longer sets USE_FIRESTORE=true -- without it, "
+        "scripts/seed_demo_data.py writes to an in-memory store this local process throws away on "
+        "exit, instead of the live Firestore database the deployed dashboard actually reads from."
+    )
+
+
+def test_seed_live_demo_data_sh_defaults_to_the_same_database_name_setup_creates():
+    seed_text = _SEED_LIVE_SCRIPT.read_text()
+    setup_text = _SETUP_SCRIPT.read_text()
+
+    seed_match = re.search(r'FIRESTORE_DATABASE="\$\{FIRESTORE_DATABASE:-([^}"]+)\}"', seed_text)
+    assert seed_match, "scripts/seed_live_demo_data.sh's FIRESTORE_DATABASE default changed in a way this check doesn't recognize"
+
+    setup_match = re.search(r'gcloud firestore databases create --database="\$\{FIRESTORE_DATABASE:-([^}"]+)\}"', setup_text)
+    assert setup_match, "setup_gcp.sh's Firestore database creation command changed in a way this check doesn't recognize"
+
+    assert seed_match.group(1) == setup_match.group(1), (
+        f"scripts/seed_live_demo_data.sh defaults to database {seed_match.group(1)!r} but setup_gcp.sh "
+        f"creates {setup_match.group(1)!r} -- run with the defaults, seeding would write into a "
+        "database the deployed service never reads from."
     )

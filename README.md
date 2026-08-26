@@ -293,6 +293,17 @@ curl -s -H 'X-API-Key: demo-key' http://localhost:8080/vendors | jq
 curl -s -H 'X-API-Key: demo-key' http://localhost:8080/evidence-collector/tick -X POST | jq   # deterministic, works with zero credentials
 ```
 
+**Seeding an already-deployed Cloud Run instance:** `BULWARK_SEED_DEMO_DATA=true`
+on `deploy_cloud_run.sh` only seeds on that container's *next cold
+start* -- easy to miss if the env var didn't actually land, or nothing
+happened to trigger a fresh container. `./scripts/seed_live_demo_data.sh`
+sidesteps that path entirely: run it locally with `PROJECT_ID=your-project`,
+and it seeds the exact same scenario straight into the live Firestore
+database the deployed service reads from (needs
+`gcloud auth application-default login` once, same credentials your
+other `gcloud`/deploy commands already use). No redeploy, no cold
+start, no env var to lose on the way to Cloud Run.
+
 ### 4. Run the dashboard
 
 ```bash
