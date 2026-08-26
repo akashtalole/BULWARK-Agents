@@ -153,3 +153,21 @@ def test_deploy_cloud_run_sh_threads_seed_demo_data_through():
         "(FIRESTORE_DATABASE, GEMINI_FLASH_MODEL, ...) is threaded through with a ${VAR:-default} "
         "fallback except this one, which was simply missing from the --set-env-vars list."
     )
+
+
+def test_deploy_cloud_run_sh_threads_ui_password_through():
+    deploy_text = _DEPLOY_SCRIPT.read_text()
+    assert "BULWARK_UI_PASSWORD=${BULWARK_UI_PASSWORD:-}" in deploy_text, (
+        "deploy_cloud_run.sh's --set-env-vars no longer threads BULWARK_UI_PASSWORD through -- see "
+        "test_deploy_cloud_run_sh_threads_seed_demo_data_through for the same failure mode this "
+        "prevents: a var missing from --set-env-vars silently evaporates instead of reaching Cloud Run."
+    )
+
+
+def test_deploy_frontend_sh_auto_detects_the_backend_url_for_the_login_page():
+    frontend_text = _FRONTEND_DEPLOY_SCRIPT.read_text()
+    assert "VITE_DEFAULT_BASE_URL" in frontend_text, (
+        "deploy_frontend.sh no longer bakes the deployed Cloud Run URL into the dashboard build -- "
+        "without VITE_DEFAULT_BASE_URL, a judge opening the login page has no Base URL configured yet "
+        "and /auth/config has nothing to call."
+    )

@@ -79,6 +79,15 @@ export class BulwarkClient {
     return this.get("/healthz");
   }
 
+  // ----------------------------------------------------------------- auth
+  getAuthConfig(): Promise<{ login_required: boolean }> {
+    return this.get("/auth/config");
+  }
+
+  login(password: string): Promise<{ api_key: string }> {
+    return this.post("/auth/login", { password });
+  }
+
   // ------------------------------------------------------------- registry
   listRegistry(): Promise<AgentRecord[]> {
     return this.get("/registry");

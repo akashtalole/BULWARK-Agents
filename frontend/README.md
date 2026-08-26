@@ -58,6 +58,26 @@ get this a real URL without a custom domain or a second Cloud Run
 service. See its own output for the exact public URL and the
 `BULWARK_CORS_ALLOW_ORIGINS` value the backend needs to allow it.
 
+## Login page
+
+Optional. If the backend has `BULWARK_UI_PASSWORD` set, the dashboard
+opens on a login page instead of the fleet view. Enter that one password
+and `POST /auth/login` trades it for the real API key -- stored the same
+way a manually-entered key would be (`localStorage`, this browser only),
+so every request after that still goes through the same `X-API-Key`
+check every other route enforces. This exists so a judge (or you) gets
+one password to type in rather than the literal API key; it is not a
+second, independent auth system -- `BULWARK_API_KEYS` server-side is
+still the actual gate. If `BULWARK_UI_PASSWORD` is unset, `GET
+/auth/config` reports `login_required: false` and the login page is
+skipped entirely -- local dev needs no configuration, same as before
+this existed.
+
+`deploy/deploy_frontend.sh` bakes the deployed Cloud Run URL in as the
+default Base URL at build time (`VITE_DEFAULT_BASE_URL`), so a judge
+opening the login page doesn't need to configure Connection settings
+first -- just the password.
+
 ## CORS
 
 `src/bulwark/config.py`'s `cors_allow_origins` (env var
@@ -78,10 +98,12 @@ export BULWARK_CORS_ALLOW_ORIGINS="http://localhost:5173,https://your-dashboard.
   `localStorage` per browser (`src/lib/recent.ts`) rather than
   inventing a backend endpoint that doesn't exist. Paste an id
   directly if you have one from elsewhere.
-- **No auth beyond the API key.** Same model as the rest of BULWARK —
-  this is a hackathon build's Agent Gateway, not a multi-tenant SaaS
-  product. The X-API-Key you configure here is exactly the header every
-  other caller (`curl`, `demo_cli.py`) uses.
+- **No multi-user auth, just an optional single password.** Same model
+  as the rest of BULWARK — this is a hackathon build's Agent Gateway,
+  not a multi-tenant SaaS product. The X-API-Key every request carries
+  is exactly the header every other caller (`curl`, `demo_cli.py`)
+  uses; the login page (see above) is a friendlier way to obtain that
+  one key, not a second user system.
 - **No offline/optimistic writes.** Every mutation round-trips to the
   Agent Gateway and re-fetches; there is no local state that could
   drift from what the fleet actually did.
@@ -93,10 +115,11 @@ src/
   lib/
     api.ts        Typed client (BulwarkClient) over every route in api/routes.py
     types.ts       TypeScript types mirroring platform/models.py's dataclasses exactly
-    settings.tsx   Base URL / API key, localStorage-backed React context
+    settings.tsx   Base URL / API key / login state, localStorage-backed React context
     recent.ts       Per-browser "recently submitted" id memory (questionnaires, traces)
   components/
     ui.tsx         Card, Table, Badge, Button, etc. -- the whole design system
-    Layout.tsx     Sidebar nav + connection/autonomy status bar
-  pages/           One file per route (Dashboard, Vendors, Findings, ...)
+    Layout.tsx     Sidebar nav + connection/autonomy status bar + log out
+    RequireAuth.tsx Route guard -- redirects to /login when BULWARK_UI_PASSWORD is set
+  pages/           One file per route (Dashboard, Vendors, Findings, ..., Login)
 ```

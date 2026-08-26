@@ -68,3 +68,7 @@ class OffboardVendorRequest(BaseModel):
 
 class ConfirmDataDeletionRequest(BaseModel):
     evidence_note: str = Field(..., min_length=1, max_length=2000)
+
+
+class LoginRequest(BaseModel):
+    password: str = Field(..., min_length=1, max_length=200)

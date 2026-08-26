@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import {
@@ -13,8 +13,10 @@ import {
   Inbox,
   Settings as SettingsIcon,
   Power,
+  LogOut,
 } from "lucide-react";
 import { useApi } from "../lib/api";
+import { useSettings } from "../lib/settings";
 import { Badge } from "./ui";
 
 const NAV = [
@@ -31,6 +33,8 @@ const NAV = [
 
 export default function Layout() {
   const api = useApi();
+  const navigate = useNavigate();
+  const { setAuthenticated } = useSettings();
 
   const health = useQuery({
     queryKey: ["fleet-health"],
@@ -38,6 +42,8 @@ export default function Layout() {
     refetchInterval: 15000,
     retry: false,
   });
+
+  const authConfig = useQuery({ queryKey: ["auth-config"], queryFn: () => api.getAuthConfig(), retry: false });
 
   const connectionOk = health.isSuccess;
   const autonomy = health.data?.global_autonomy_level;
@@ -98,6 +104,18 @@ export default function Layout() {
             <SettingsIcon className="h-4 w-4 shrink-0" />
             Connection
           </NavLink>
+          {authConfig.data?.login_required && (
+            <button
+              onClick={() => {
+                setAuthenticated(false);
+                navigate("/login", { replace: true });
+              }}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-zinc-100"
+            >
+              <LogOut className="h-4 w-4 shrink-0" />
+              Log out
+            </button>
+          )}
         </div>
       </aside>
 

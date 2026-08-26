@@ -356,6 +356,7 @@ for details and other hosting options.
 | `USE_FIRESTORE` | Use Firestore instead of in-memory stores | `true` if `GOOGLE_CLOUD_PROJECT` is set |
 | `USE_PUBSUB` | Also mirror events onto real Pub/Sub topics | `false` |
 | `BULWARK_API_KEYS` | Comma-separated Agent Gateway allowlist | `demo-key` |
+| `BULWARK_UI_PASSWORD` | Optional single password gating the dashboard's login page (see `frontend/README.md`) | unset (no login page) |
 | `BULWARK_CORS_ALLOW_ORIGINS` | Comma-separated origins allowed to call the API cross-origin (the dashboard's origin) | `http://localhost:5173,http://127.0.0.1:5173` |
 | `RATE_LIMIT_REQUESTS` / `RATE_LIMIT_WINDOW_SECONDS` | Gateway rate limit | `30` / `60` |
 | `ANSWER_CONFIDENCE_THRESHOLD` | Questionnaire abstention threshold | `0.75` |

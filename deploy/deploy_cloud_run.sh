@@ -9,6 +9,9 @@
 # --max-instances=3 (hard ceiling against spikes), 1cpu/1Gi (the
 # multi-agent event chain needs a bit more headroom than a single-agent
 # service, still far from a "big" instance).
+#
+# Set BULWARK_UI_PASSWORD to gate the dashboard (deploy_frontend.sh) behind
+# a login page -- unset (the default) means no login page, same as today.
 set -euo pipefail
 
 PROJECT_ID="${PROJECT_ID:?Set PROJECT_ID, e.g. PROJECT_ID=my-project ./deploy/deploy_cloud_run.sh}"
@@ -33,7 +36,7 @@ gcloud run deploy "${SERVICE_NAME}" \
   --image="${IMAGE}" \
   --project="${PROJECT_ID}" \
   --region="${REGION}" \
-  --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_GENAI_USE_VERTEXAI=true,USE_FIRESTORE=true,FIRESTORE_DATABASE=${FIRESTORE_DATABASE:-bulwark},USE_PUBSUB=${USE_PUBSUB:-true},BULWARK_ENVIRONMENT=cloud-run,GEMINI_FLASH_MODEL=${GEMINI_FLASH_MODEL:-gemini-flash-latest},GEMINI_PRO_MODEL=${GEMINI_PRO_MODEL:-gemini-pro-latest},BULWARK_API_KEYS=${BULWARK_API_KEYS:-demo-key},BULWARK_SEED_DEMO_DATA=${BULWARK_SEED_DEMO_DATA:-false}" \
+  --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_GENAI_USE_VERTEXAI=true,USE_FIRESTORE=true,FIRESTORE_DATABASE=${FIRESTORE_DATABASE:-bulwark},USE_PUBSUB=${USE_PUBSUB:-true},BULWARK_ENVIRONMENT=cloud-run,GEMINI_FLASH_MODEL=${GEMINI_FLASH_MODEL:-gemini-flash-latest},GEMINI_PRO_MODEL=${GEMINI_PRO_MODEL:-gemini-pro-latest},BULWARK_API_KEYS=${BULWARK_API_KEYS:-demo-key},BULWARK_SEED_DEMO_DATA=${BULWARK_SEED_DEMO_DATA:-false},BULWARK_UI_PASSWORD=${BULWARK_UI_PASSWORD:-}" \
   --min-instances=0 \
   --max-instances="${MAX_INSTANCES:-3}" \
   --cpu=1 \

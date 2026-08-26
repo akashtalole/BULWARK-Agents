@@ -3,6 +3,8 @@ unavailable here, so these inject fake artifact/questionnaire/drift-sweep
 functions that exercise the same platform code paths (Case Bank-style
 repos, audit log, kill switch) the real ones use."""
 
+import dataclasses
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -445,3 +447,38 @@ def test_digest_generate_needs_credentials(client):
 def test_unknown_digest_is_404(client):
     resp = client.get("/digest/digest_does_not_exist", headers={"X-API-Key": API_KEY})
     assert resp.status_code == 404
+
+
+def test_auth_config_reports_login_not_required_by_default(client, monkeypatch):
+    monkeypatch.setattr(routes, "settings", dataclasses.replace(routes.settings, ui_password=None))
+    resp = client.get("/auth/config")
+    assert resp.status_code == 200
+    assert resp.json() == {"login_required": False}
+
+
+def test_auth_config_reports_login_required_once_a_password_is_set(client, monkeypatch):
+    monkeypatch.setattr(routes, "settings", dataclasses.replace(routes.settings, ui_password="letmein"))
+    resp = client.get("/auth/config")
+    assert resp.status_code == 200
+    assert resp.json() == {"login_required": True}
+
+
+def test_login_is_404_when_no_password_is_configured(client, monkeypatch):
+    monkeypatch.setattr(routes, "settings", dataclasses.replace(routes.settings, ui_password=None))
+    resp = client.post("/auth/login", json={"password": "anything"})
+    assert resp.status_code == 404
+
+
+def test_login_rejects_the_wrong_password(client, monkeypatch):
+    monkeypatch.setattr(routes, "settings", dataclasses.replace(routes.settings, ui_password="letmein"))
+    resp = client.post("/auth/login", json={"password": "wrong"})
+    assert resp.status_code == 401
+
+
+def test_login_accepts_the_right_password_and_returns_the_first_api_key(client, monkeypatch):
+    monkeypatch.setattr(
+        routes, "settings", dataclasses.replace(routes.settings, ui_password="letmein", api_keys=("real-key", "second-key"))
+    )
+    resp = client.post("/auth/login", json={"password": "letmein"})
+    assert resp.status_code == 200
+    assert resp.json() == {"api_key": "real-key"}

@@ -2,15 +2,21 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 
 const BASE_URL_KEY = "bulwark.baseUrl";
 const API_KEY_KEY = "bulwark.apiKey";
+const AUTHENTICATED_KEY = "bulwark.authenticated";
 
-const DEFAULT_BASE_URL = "http://localhost:8080";
+// Baked in at build time by deploy/deploy_frontend.sh (see vite-env.d.ts) so
+// a deployed dashboard defaults to its own Cloud Run backend instead of
+// localhost -- falls back to localhost for local dev, where it's unset.
+const DEFAULT_BASE_URL = import.meta.env.VITE_DEFAULT_BASE_URL || "http://localhost:8080";
 const DEFAULT_API_KEY = "demo-key";
 
 interface SettingsContextValue {
   baseUrl: string;
   apiKey: string;
+  authenticated: boolean;
   setBaseUrl: (v: string) => void;
   setApiKey: (v: string) => void;
+  setAuthenticated: (v: boolean) => void;
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
@@ -22,6 +28,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [apiKey, setApiKeyState] = useState(
     () => localStorage.getItem(API_KEY_KEY) || DEFAULT_API_KEY,
   );
+  const [authenticated, setAuthenticatedState] = useState(
+    () => localStorage.getItem(AUTHENTICATED_KEY) === "true",
+  );
 
   useEffect(() => {
     localStorage.setItem(BASE_URL_KEY, baseUrl);
@@ -31,14 +40,20 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(API_KEY_KEY, apiKey);
   }, [apiKey]);
 
+  useEffect(() => {
+    localStorage.setItem(AUTHENTICATED_KEY, String(authenticated));
+  }, [authenticated]);
+
   const value = useMemo(
     () => ({
       baseUrl,
       apiKey,
+      authenticated,
       setBaseUrl: setBaseUrlState,
       setApiKey: setApiKeyState,
+      setAuthenticated: setAuthenticatedState,
     }),
-    [baseUrl, apiKey],
+    [baseUrl, apiKey, authenticated],
   );
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

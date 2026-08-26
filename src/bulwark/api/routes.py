@@ -15,6 +15,7 @@ from bulwark.api.schemas import (
     ConfirmDataDeletionRequest,
     GenericDecisionRequest,
     HumanDecisionRequest,
+    LoginRequest,
     OffboardVendorRequest,
     RegisterVendorRequest,
     SubmitArtifactRequest,
@@ -72,6 +73,31 @@ def _authorize(api_key: str | None) -> str:
 @router.get("/healthz")
 async def healthz() -> dict:
     return {"status": "ok"}
+
+
+@router.get("/auth/config")
+async def get_auth_config() -> dict:
+    """Unauthenticated by design -- the frontend needs to know whether to
+    show a login page *before* it has an API key to authenticate with."""
+    return {"login_required": settings.ui_password is not None}
+
+
+@router.post("/auth/login")
+async def login(payload: LoginRequest) -> dict:
+    """Trades BULWARK_UI_PASSWORD for the first configured API key. This
+    is a convenience gate for frontend/ (see config.py's ui_password
+    docstring) -- the real per-request auth is still api_keys/_authorize
+    on every other route; this just spares a judge from having to know
+    the raw API key."""
+    if settings.ui_password is None:
+        raise HTTPException(status_code=404, detail="login is not configured (BULWARK_UI_PASSWORD unset)")
+    try:
+        rate_limiter.check("ui-login")
+    except RateLimitExceeded as exc:
+        raise HTTPException(status_code=429, detail=str(exc)) from exc
+    if payload.password != settings.ui_password:
+        raise HTTPException(status_code=401, detail="incorrect password")
+    return {"api_key": settings.api_keys[0]}
 
 
 @router.get("/registry")

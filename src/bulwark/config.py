@@ -106,6 +106,14 @@ class Settings:
     # server never sees. This flag is the fix: one process, one store.
     seed_demo_data: bool = _bool_env("BULWARK_SEED_DEMO_DATA", False)
 
+    # Optional single-password gate for frontend/ -- distinct from
+    # api_keys above, which is the real per-request auth every route
+    # already enforces. Unset by default: no login page, same as today.
+    # When set, GET /auth/config advertises it and POST /auth/login trades
+    # the password for the first configured API key, so a judge types in
+    # one password instead of the literal API key.
+    ui_password: str | None = os.environ.get("BULWARK_UI_PASSWORD") or None
+
     service_name: str = os.environ.get("BULWARK_SERVICE_NAME", "bulwark")
     service_version: str = os.environ.get("BULWARK_SERVICE_VERSION", "0.1.0")
     environment: str = os.environ.get("BULWARK_ENVIRONMENT", "local")
