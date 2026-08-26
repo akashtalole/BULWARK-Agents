@@ -375,7 +375,7 @@ flowchart LR
         R12["POST /findings/{id}/decision\nPOST /decisions"]
     end
     subgraph Quest["Questionnaires"]
-        R13["POST /questionnaires\nGET /questionnaires/{id}"]
+        R13["POST /questionnaires\nGET /questionnaires\nGET /questionnaires/{id}\nPATCH /questionnaires/{id}"]
         R14["POST /questionnaires/{id}/export"]
     end
     subgraph Sweeps["Sweeps + Rollback"]

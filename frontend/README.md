@@ -1,7 +1,7 @@
 # BULWARK Dashboard
 
 A modern React dashboard for BULWARK's Agent Gateway — the fleet's
-[38-route API surface](../docs/architecture.md#api-surface-section-9) as
+[40-route API surface](../docs/architecture.md#api-surface-section-9) as
 a real UI instead of `curl`/`jq`. Fleet health and the kill switch,
 per-vendor findings/contract-terms/subprocessors/assessment-history
 (with a live risk-trend chart)/crosswalk/offboarding, the reasoning

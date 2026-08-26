@@ -437,7 +437,9 @@ API-key + rate-limit check (`_authorize`).
 | `GET /findings/{id}/explain` | Replay its reasoning-chain record(s) |
 | `POST /findings/{id}/decision` / `POST /decisions` | Record a human decision (path- or body-keyed) |
 | `POST /questionnaires` | Upload/submit a buyer questionnaire |
+| `GET /questionnaires` | List all questionnaires -- powers the dashboard's Questionnaires list/search/sort |
 | `GET /questionnaires/{id}` | Answers + confidence + citations |
+| `PATCH /questionnaires/{id}` | Manually rename the buyer or add/remove questions -- not a re-run of Attest: an unchanged question keeps its existing answer, a new one starts `needs_human`, a dropped one loses its answer |
 | `POST /questionnaires/{id}/export` | DLP-gated export (only `auto`-status answers) |
 | `POST /runs/{trace_id}/rollback` | Compensating-action rollback |
 | `POST /evidence-collector/tick` | Deterministic sweep -- no credentials needed |

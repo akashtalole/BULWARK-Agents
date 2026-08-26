@@ -265,6 +265,25 @@ curl -s -H 'X-API-Key: demo-key' -X POST http://localhost:8080/questionnaires/{q
 answer didn't make the cut -- an export can't leak what was never
 allowed to leave in the first place.
 
+List everything submitted so far, or fix a typo/add a question by hand
+without re-running the Attest loop:
+
+```bash
+curl -s -H 'X-API-Key: demo-key' http://localhost:8080/questionnaires | jq
+
+curl -s -H 'X-API-Key: demo-key' -X PATCH http://localhost:8080/questionnaires/{questionnaire_id} \
+  -H 'Content-Type: application/json' \
+  -d '{"buyer": "BigBuyer Corp (Renewal)"}'
+```
+
+`PATCH` is a manual edit, not a re-answer: a question whose text didn't
+change keeps its existing answer untouched (citations and all), a
+question that's genuinely new starts as a blank `needs_human` answer
+(nothing here calls the LLM), and a question that's no longer in the
+list has its answer deleted with it. The dashboard's Questionnaires page
+(list + search/sort, and an Edit button on each questionnaire's detail
+page) is a UI over exactly these two endpoints.
+
 ## 7. The continuous sweeps (Evidence Collector, Drift Sentinel)
 
 **Evidence Collector works with zero credentials** (deterministic).
@@ -544,7 +563,9 @@ zero Gemini credentials; 🔑 = returns `503` without them.
 | `POST /findings/{id}/decision` | ✅ | Record a human decision (path-keyed) |
 | `POST /decisions` | ✅ | Record a human decision (body-keyed) |
 | `POST /questionnaires` | 🔑 | Submit a buyer questionnaire |
+| `GET /questionnaires` | ✅ | List all questionnaires |
 | `GET /questionnaires/{id}` | ✅ | Answers + confidence + citations |
+| `PATCH /questionnaires/{id}` | ✅ | Rename the buyer or add/remove questions -- a manual edit, not a re-run |
 | `POST /questionnaires/{id}/export` | ✅ | DLP-gated export of `auto`-status answers only |
 | `POST /runs/{trace_id}/rollback` | ✅ | Compensating-action rollback |
 | `POST /evidence-collector/tick` | ✅ | Deterministic evidence sweep |
