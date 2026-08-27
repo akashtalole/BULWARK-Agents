@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useApi, ApiError } from "../lib/api";
 import {
@@ -113,8 +113,8 @@ export default function VendorDetail() {
       </div>
 
       {tab === "Findings" && <FindingsTab vendorId={v.vendor_id} />}
-      {tab === "Contract terms" && <ContractTermsTab vendorId={v.vendor_id} />}
-      {tab === "Subprocessors" && <SubprocessorsTab vendorId={v.vendor_id} />}
+      {tab === "Contract terms" && <ContractTermsTab vendorId={v.vendor_id} vendorName={v.name} />}
+      {tab === "Subprocessors" && <SubprocessorsTab vendorId={v.vendor_id} vendorName={v.name} />}
       {tab === "Assessment history" && <AssessmentHistoryTab vendorId={v.vendor_id} />}
       {tab === "Crosswalk" && <CrosswalkTab vendorId={v.vendor_id} />}
       {tab === "Offboarding" && <OffboardingTab vendorId={v.vendor_id} />}
@@ -162,12 +162,23 @@ function FindingsTab({ vendorId }: { vendorId: string }) {
   );
 }
 
-function ContractTermsTab({ vendorId }: { vendorId: string }) {
+function ContractTermsTab({ vendorId, vendorName }: { vendorId: string; vendorName: string }) {
   const api = useApi();
+  const navigate = useNavigate();
   const terms = useQuery({ queryKey: ["vendor-terms", vendorId], queryFn: () => api.getVendorContractTerms(vendorId) });
   if (terms.isLoading) return <LoadingBlock />;
   if (terms.isError) return <ErrorBlock message={(terms.error as Error).message} />;
-  if (terms.data!.length === 0) return <EmptyBlock label="No contract terms extracted yet." />;
+  if (terms.data!.length === 0)
+    return (
+      <EmptyBlock label="No contract terms extracted yet — this vendor has no DPA/MSA on file.">
+        <Button
+          variant="ghost"
+          onClick={() => navigate(`/vendors?submit=1&vendor=${encodeURIComponent(vendorName)}&docType=DPA`)}
+        >
+          Upload a contract for {vendorName}
+        </Button>
+      </EmptyBlock>
+    );
   return (
     <Card>
       <Table>
@@ -202,12 +213,23 @@ function ContractTermsTab({ vendorId }: { vendorId: string }) {
   );
 }
 
-function SubprocessorsTab({ vendorId }: { vendorId: string }) {
+function SubprocessorsTab({ vendorId, vendorName }: { vendorId: string; vendorName: string }) {
   const api = useApi();
+  const navigate = useNavigate();
   const subs = useQuery({ queryKey: ["vendor-subs", vendorId], queryFn: () => api.getVendorSubprocessors(vendorId) });
   if (subs.isLoading) return <LoadingBlock />;
   if (subs.isError) return <ErrorBlock message={(subs.error as Error).message} />;
-  if (subs.data!.length === 0) return <EmptyBlock label="No subprocessors disclosed yet." />;
+  if (subs.data!.length === 0)
+    return (
+      <EmptyBlock label="No subprocessors disclosed yet — none have been extracted from a contract for this vendor.">
+        <Button
+          variant="ghost"
+          onClick={() => navigate(`/vendors?submit=1&vendor=${encodeURIComponent(vendorName)}&docType=DPA`)}
+        >
+          Upload a contract for {vendorName}
+        </Button>
+      </EmptyBlock>
+    );
   return (
     <Card>
       <Table>

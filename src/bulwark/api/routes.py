@@ -8,8 +8,9 @@ from __future__ import annotations
 import uuid
 from typing import Any, Awaitable, Callable
 
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile
 
+from bulwark.api.document_extraction import EmptyExtractionError, UnsupportedFileError, extract_text
 from bulwark.api.schemas import (
     AutonomyRequest,
     ConfirmDataDeletionRequest,
@@ -34,6 +35,12 @@ from bulwark.platform.policy import pause_agent, resume_agent, set_global_autono
 from bulwark.platform.registry import registry
 
 router = APIRouter()
+
+# Matches SubmitArtifactRequest.raw_text's max_length -- an uploaded
+# document's extracted text is truncated to the same ceiling the JSON
+# raw_text path already enforces, rather than silently accepting an
+# unbounded amount of text into an LLM call.
+_MAX_ARTIFACT_TEXT_CHARS = 20000
 
 # Overridable in tests / when Gemini credentials aren't configured -- see
 # tests/test_api.py and main.py's lifespan.
@@ -134,6 +141,42 @@ async def submit_artifact(payload: SubmitArtifactRequest, x_api_key: str | None 
             detail="Orchestration is not configured. Set GOOGLE_API_KEY (or Vertex AI credentials) and restart.",
         )
     result = await _artifact_fn(payload.vendor_name, payload.doc_type, payload.raw_text, payload.gcs_uri, payload.sha256, x_api_key)
+    return SubmitArtifactResponse(**result)
+
+
+@router.post("/vendors/artifacts/upload", response_model=SubmitArtifactResponse)
+async def upload_artifact(
+    vendor_name: str = Form(..., min_length=1, max_length=200),
+    doc_type: str = Form(..., min_length=1, max_length=50),
+    file: UploadFile = File(...),
+    x_api_key: str | None = Header(default=None),
+) -> SubmitArtifactResponse:
+    """A real file (PDF/DOCX/TXT) instead of pre-typed raw_text -- the
+    enterprise on-ramp: a vendor's SOC 2/DPA usually arrives as a document,
+    not a paste buffer. Extraction happens here, at the HTTP edge, *before*
+    the text ever reaches an agent -- Model Armor's injection scan on the
+    downstream Intake/Contract Intelligence callback still sees every
+    extracted character, exactly as it would for the raw_text path."""
+    _authorize(x_api_key)
+    if _artifact_fn is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Orchestration is not configured. Set GOOGLE_API_KEY (or Vertex AI credentials) and restart.",
+        )
+    try:
+        raw_text = await extract_text(file)
+    except UnsupportedFileError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except EmptyExtractionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    truncated = len(raw_text) > _MAX_ARTIFACT_TEXT_CHARS
+    if truncated:
+        raw_text = raw_text[:_MAX_ARTIFACT_TEXT_CHARS]
+
+    result = await _artifact_fn(vendor_name, doc_type, raw_text, f"gs://bulwark-quarantine/{file.filename}", "uploaded", x_api_key)
+    if truncated:
+        result["summary"] = f"{result.get('summary', '')} (source document truncated to {_MAX_ARTIFACT_TEXT_CHARS} chars)".strip()
     return SubmitArtifactResponse(**result)
 
 

@@ -364,7 +364,7 @@ flowchart LR
     end
     subgraph Vendors["Vendor onboarding + Assure"]
         R6["POST /vendors"]
-        R7["POST /vendors/artifacts"]
+        R7["POST /vendors/artifacts\nPOST /vendors/artifacts/upload"]
         R8["GET /vendors, /vendors/{id}"]
         R9["GET .../findings\nGET .../contract-terms\nGET .../subprocessors\nGET .../assessment-history\nGET .../crosswalk"]
         R9b["POST .../offboard\nPOST .../offboard/confirm\nGET .../offboarding"]

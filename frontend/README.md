@@ -1,7 +1,7 @@
 # BULWARK Dashboard
 
 A modern React dashboard for BULWARK's Agent Gateway — the fleet's
-[38-route API surface](../docs/architecture.md#api-surface-section-9) as
+[41-route API surface](../docs/architecture.md#api-surface-section-9) as
 a real UI instead of `curl`/`jq`. Fleet health and the kill switch,
 per-vendor findings/contract-terms/subprocessors/assessment-history
 (with a live risk-trend chart)/crosswalk/offboarding, the reasoning
@@ -127,6 +127,27 @@ dropped question's answer is deleted with it. The Questionnaires list
 page itself now comes from a real `GET /questionnaires` (added
 alongside this), not the localStorage-remembered-ids workaround the
 next bullet used to describe.
+
+## Real document upload
+
+**Vendors → Submit artifact** defaults to an **Upload document** tab
+(PDF/DOCX/TXT, drag-and-drop or click-to-pick, 10 MB client-side cap
+before the request even goes out) instead of a paste box -- it posts to
+`POST /vendors/artifacts/upload` (multipart), where
+`api/document_extraction.py` pulls the text out server-side (`pypdf`
+for PDF, `python-docx` for DOCX) before it ever reaches Model Armor or
+an agent. A **Paste text** tab next to it still hits the original
+`POST /vendors/artifacts` JSON path, unchanged, for anyone who'd rather
+type. `demo_documents/` at the repo root has a ready `.docx` per vendor
+per doc type to try this with.
+
+The **Vendor** field is a dropdown over the vendors `GET /vendors`
+already returned, not a free-text box -- pick an existing vendor to add
+a follow-up document to their record, or "+ New vendor…" to onboard one
+that doesn't exist yet. A vendor's detail page deep-links here too: its
+Contract Terms and Subprocessors tabs, when empty, show an "Upload a
+contract for <vendor>" button that opens this form with that vendor and
+`doc_type: DPA` pre-selected (`/vendors?submit=1&vendor=...&docType=DPA`).
 
 ## What's deliberately not here
 

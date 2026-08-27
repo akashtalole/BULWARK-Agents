@@ -84,6 +84,24 @@ Assessor cross-references them against your control framework and
 independently-observed Evidence; and if it finds an actual gap, opens a
 ticket and drafts a follow-up automatically.
 
+A real file instead of pre-typed text -- `POST /vendors/artifacts/upload`
+(multipart) takes a PDF, DOCX, or TXT, extracts its text server-side
+(`api/document_extraction.py`), then runs through the exact same
+pipeline above:
+
+```bash
+curl -s -H 'X-API-Key: demo-key' -X POST http://localhost:8080/vendors/artifacts/upload \
+  -F 'vendor_name=Cloudy SaaS Inc' \
+  -F 'doc_type=DPA' \
+  -F 'file=@demo_documents/cloudy-saas-inc/Data_Processing_Agreement.docx'
+```
+
+`demo_documents/` has a ready-made `.docx` per vendor per doc type,
+consistent with `scripts/seed_demo_data.py`'s narrative -- see its
+README for which file fills which gap. The dashboard's **Submit an
+artifact** form defaults to this upload path (with a "Paste text" tab
+for the raw_text path above).
+
 Register a vendor's tier ahead of any artifact arriving (e.g. during
 procurement, before their SOC 2 report exists yet):
 
@@ -479,7 +497,7 @@ wouldn't un-delete it.
 ## 13. The executive risk digest
 
 **Requires Gemini credentials for the narrative step** -- gathering the
-inputs it's grounded in is deterministic. With 38 API endpoints across
+inputs it's grounded in is deterministic. With 41 API endpoints across
 five feature areas, nobody has time to click through all of them every
 week. Generate a digest on demand instead of waiting for the scheduled
 cadence:
@@ -525,7 +543,8 @@ zero Gemini credentials; 🔑 = returns `503` without them.
 | `GET /healthz` | ✅ (public, no API key) | Liveness check |
 | `GET /registry` | ✅ | List all 12 registered agents |
 | `POST /vendors` | ✅ | Register a vendor / set tier up front |
-| `POST /vendors/artifacts` | 🔑 | Submit a compliance doc or contract; routes automatically by `doc_type` |
+| `POST /vendors/artifacts` | 🔑 | Submit a compliance doc or contract (JSON `raw_text`); routes automatically by `doc_type` |
+| `POST /vendors/artifacts/upload` | 🔑 | Same, but a real PDF/DOCX/TXT file (multipart) -- extracted server-side first |
 | `GET /vendors` | ✅ | List vendors, with `blind_window_days` |
 | `GET /vendors/{id}` | ✅ | Fetch one vendor |
 | `GET /vendors/{id}/findings` | ✅ | Findings for one vendor |

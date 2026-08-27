@@ -20,7 +20,7 @@ enterprises repeat across every overlapping compliance framework they
 carry, the **Offboarding Agent** operationalizes the DPA-mandated
 data-deletion deadline every vendor termination creates -- an obligation
 that otherwise lives in a spreadsheet, if it's tracked at all --
-**Executive Risk Digest** synthesizes the fleet's 38 API endpoints of
+**Executive Risk Digest** synthesizes the fleet's 41 API endpoints of
 state into a short prioritized narrative a busy executive can actually
 read, and Drift Sentinel's new `risk_trend_rising` signal catches a
 control's risk climbing across reassessments *before* it becomes a hard
@@ -235,15 +235,17 @@ src/bulwark/
   platform/      store, event_bus, registry, identity, guardrails, observability, policy (kill switch),
                  spend (circuit breaker), rollback (compensating actions), models (data graph + reasoning
                  records + assessment snapshots + tenants + offboarding records + digests), memory_bank, auth
-  api/           FastAPI routes + schemas (38 routes -- see docs/architecture.md's API surface table)
+  api/           FastAPI routes + schemas + document_extraction (PDF/DOCX/TXT text extraction for
+                 uploaded artifacts) -- 41 routes, see docs/architecture.md's API surface table
   main.py        ASGI entrypoint (Cloud Run / uvicorn)
-tests/           146 tests, no live Gemini credentials required
+tests/           190 tests, no live Gemini credentials required
 deploy/          setup_gcp.sh, deploy_cloud_run.sh
 docs/            architecture.md (diagram + agent table + event table + API surface + mechanisms)
                  + DIAGRAMS.md (HLD/LLD/DFD/ERD/sequence/state/deployment diagrams, all Mermaid)
                  + SETUP_GUIDE.md (detailed install/config/deployment) + USER_GUIDE.md (every
                  workflow + API endpoint, worked examples)
 scripts/         seed_demo_data.py, demo_cli.py
+demo_documents/  realistic .docx per vendor per doc type, to try the dashboard's file-upload form with
 frontend/        React + Vite + TypeScript dashboard over the API surface above -- see frontend/README.md
 SUBMISSION.md    Devpost submission text, drafted from this README
 DEMO_VIDEO_SCRIPT.md  The required ~4-minute demo video, scripted
@@ -324,6 +326,15 @@ buyer, add/remove questions -- `PATCH /questionnaires/{id}`) from a
 questionnaire's detail page; see [`docs/firebase_auth_feasibility.md`](docs/firebase_auth_feasibility.md)
 for what real multi-user login would take beyond the current single
 `BULWARK_UI_PASSWORD` gate.
+
+**Vendors → Submit artifact** takes a real PDF/DOCX/TXT file (extracted
+server-side, `POST /vendors/artifacts/upload`), picks the vendor from a
+dropdown over your existing vendors instead of retyping a name, and a
+vendor's Contract Terms/Subprocessors tabs deep-link straight back into
+this form when they're empty. [`demo_documents/`](demo_documents/) has
+a ready `.docx` per vendor per doc type to try it with -- see
+[`frontend/README.md`](frontend/README.md#real-document-upload) for
+details.
 
 ### 5. Configure Gemini and run a full agent cycle
 
