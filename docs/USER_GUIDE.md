@@ -93,14 +93,15 @@ pipeline above:
 curl -s -H 'X-API-Key: demo-key' -X POST http://localhost:8080/vendors/artifacts/upload \
   -F 'vendor_name=Cloudy SaaS Inc' \
   -F 'doc_type=DPA' \
-  -F 'file=@demo_documents/cloudy-saas-inc/Data_Processing_Agreement.docx'
+  -F 'file=@demo_documents/cloudy-saas-inc/Data_Processing_Agreement.pdf'
 ```
 
-`demo_documents/` has a ready-made `.docx` per vendor per doc type,
-consistent with `scripts/seed_demo_data.py`'s narrative -- see its
-README for which file fills which gap. The dashboard's **Submit an
-artifact** form defaults to this upload path (with a "Paste text" tab
-for the raw_text path above).
+`demo_documents/` has a ready-made `.pdf` per vendor per doc type --
+every option in the dashboard's Doc type dropdown, for all three seeded
+vendors -- consistent with `scripts/seed_demo_data.py`'s narrative; see
+its README for the full file/doc-type table. The dashboard's **Submit
+an artifact** form defaults to this upload path (with a "Paste text"
+tab for the raw_text path above).
 
 Register a vendor's tier ahead of any artifact arriving (e.g. during
 procurement, before their SOC 2 report exists yet):

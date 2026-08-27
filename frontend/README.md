@@ -138,8 +138,9 @@ before the request even goes out) instead of a paste box -- it posts to
 for PDF, `python-docx` for DOCX) before it ever reaches Model Armor or
 an agent. A **Paste text** tab next to it still hits the original
 `POST /vendors/artifacts` JSON path, unchanged, for anyone who'd rather
-type. `demo_documents/` at the repo root has a ready `.docx` per vendor
-per doc type to try this with.
+type. `demo_documents/` at the repo root has a ready `.pdf` per vendor
+per doc type -- every option in the Doc type dropdown -- to try this
+with.
 
 The **Vendor** field is a dropdown over the vendors `GET /vendors`
 already returned, not a free-text box -- pick an existing vendor to add

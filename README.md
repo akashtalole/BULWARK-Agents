@@ -245,7 +245,7 @@ docs/            architecture.md (diagram + agent table + event table + API surf
                  + SETUP_GUIDE.md (detailed install/config/deployment) + USER_GUIDE.md (every
                  workflow + API endpoint, worked examples)
 scripts/         seed_demo_data.py, demo_cli.py
-demo_documents/  realistic .docx per vendor per doc type, to try the dashboard's file-upload form with
+demo_documents/  realistic .pdf per vendor per doc type, to try the dashboard's file-upload form with
 frontend/        React + Vite + TypeScript dashboard over the API surface above -- see frontend/README.md
 SUBMISSION.md    Devpost submission text, drafted from this README
 DEMO_VIDEO_SCRIPT.md  The required ~4-minute demo video, scripted
@@ -332,7 +332,8 @@ server-side, `POST /vendors/artifacts/upload`), picks the vendor from a
 dropdown over your existing vendors instead of retyping a name, and a
 vendor's Contract Terms/Subprocessors tabs deep-link straight back into
 this form when they're empty. [`demo_documents/`](demo_documents/) has
-a ready `.docx` per vendor per doc type to try it with -- see
+a ready `.pdf` per vendor per doc type -- every option in the Doc type
+dropdown -- to try it with; see
 [`frontend/README.md`](frontend/README.md#real-document-upload) for
 details.
 
