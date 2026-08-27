@@ -311,8 +311,19 @@ export function ErrorBlock({ message }: { message: string }) {
   );
 }
 
-export function EmptyBlock({ label = "Nothing here yet." }: { label?: string }) {
-  return <div className="px-1 py-6 text-sm text-zinc-600">{label}</div>;
+export function EmptyBlock({
+  label = "Nothing here yet.",
+  children,
+}: {
+  label?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="px-1 py-6 text-sm text-zinc-600">
+      <div>{label}</div>
+      {children && <div className="mt-3">{children}</div>}
+    </div>
+  );
 }
 
 export function Table({ children, className }: { children: ReactNode; className?: string }) {

@@ -50,7 +50,11 @@ export class BulwarkClient {
       ...init,
       headers: {
         "X-API-Key": this.apiKey,
-        ...(init?.body ? { "Content-Type": "application/json" } : {}),
+        // Only force JSON for a string (JSON.stringify'd) body -- a
+        // FormData body (file uploads) must NOT get an explicit
+        // Content-Type, so the browser can set its own multipart
+        // boundary instead.
+        ...(typeof init?.body === "string" ? { "Content-Type": "application/json" } : {}),
         ...init?.headers,
       },
     });
@@ -111,6 +115,19 @@ export class BulwarkClient {
     sha256?: string;
   }): Promise<SubmitArtifactResponse> {
     return this.post("/vendors/artifacts", payload);
+  }
+
+  /** Real file upload (PDF/DOCX/TXT) -- extraction happens server-side in
+   * document_extraction.py, then runs through the exact same pipeline as
+   * submitArtifact. FormData, not JSON, so the request() helper's
+   * Content-Type default is bypassed -- the browser sets the multipart
+   * boundary itself. */
+  uploadArtifact(payload: { vendor_name: string; doc_type: string; file: File }): Promise<SubmitArtifactResponse> {
+    const form = new FormData();
+    form.append("vendor_name", payload.vendor_name);
+    form.append("doc_type", payload.doc_type);
+    form.append("file", payload.file);
+    return this.request("/vendors/artifacts/upload", { method: "POST", body: form });
   }
 
   listVendors(): Promise<Vendor[]> {

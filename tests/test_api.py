@@ -93,6 +93,59 @@ def test_artifacts_endpoint_returns_503_when_orchestration_unconfigured(client):
     assert resp.status_code == 503
 
 
+def test_upload_artifact_extracts_text_from_a_real_file(client):
+    resp = client.post(
+        "/vendors/artifacts/upload",
+        headers={"X-API-Key": API_KEY},
+        data={"vendor_name": "Cloudy SaaS Inc", "doc_type": "SOC2"},
+        files={"file": ("soc2.txt", b"We enforce multi-factor authentication for all employees.", "text/plain")},
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "extracted"
+    assert body["armor_verdict"] == "clean"
+
+
+def test_upload_artifact_rejects_unsupported_file_type(client):
+    resp = client.post(
+        "/vendors/artifacts/upload",
+        headers={"X-API-Key": API_KEY},
+        data={"vendor_name": "Cloudy SaaS Inc", "doc_type": "SOC2"},
+        files={"file": ("malware.exe", b"not a document", "application/octet-stream")},
+    )
+    assert resp.status_code == 400
+
+
+def test_upload_artifact_rejects_a_file_with_no_extractable_text(client):
+    resp = client.post(
+        "/vendors/artifacts/upload",
+        headers={"X-API-Key": API_KEY},
+        data={"vendor_name": "Cloudy SaaS Inc", "doc_type": "SOC2"},
+        files={"file": ("empty.txt", b"   ", "text/plain")},
+    )
+    assert resp.status_code == 422
+
+
+def test_upload_artifact_returns_503_when_orchestration_unconfigured(client):
+    routes.set_orchestration_fns(None, None, None)
+    resp = client.post(
+        "/vendors/artifacts/upload",
+        headers={"X-API-Key": API_KEY},
+        data={"vendor_name": "x", "doc_type": "SOC2"},
+        files={"file": ("notes.txt", b"some text", "text/plain")},
+    )
+    assert resp.status_code == 503
+
+
+def test_upload_artifact_requires_api_key(client):
+    resp = client.post(
+        "/vendors/artifacts/upload",
+        data={"vendor_name": "x", "doc_type": "SOC2"},
+        files={"file": ("notes.txt", b"some text", "text/plain")},
+    )
+    assert resp.status_code == 401
+
+
 def test_questionnaire_submit_and_fetch(client):
     resp = client.post("/questionnaires", headers={"X-API-Key": API_KEY}, json={"buyer": "BigBuyer Corp", "questions": ["Do you enforce MFA?"]})
     assert resp.status_code == 200

@@ -386,7 +386,7 @@ auditable data-retention and GDPR/CCPA exposure. `GET
 /vendors/{id}/offboarding` exposes the current record.
 
 **Executive Risk Digest** (`agents/executive_digest.py`): this build's API
-surface grew to 38 routes across five feature areas: nobody clicks
+surface grew to 41 routes across five feature areas: nobody clicks
 through all of them weekly, so an urgent item (a critical-tier gap, a
 newly-detected concentration risk, an overdue offboarding) can sit
 unnoticed for a full review cycle. `gather_digest_inputs` deterministically
@@ -420,7 +420,8 @@ API-key + rate-limit check (`_authorize`).
 | Route | Purpose |
 |---|---|
 | `POST /vendors` | Register a vendor and set its tier up front |
-| `POST /vendors/artifacts` | Upload → quarantine-scan → Model Armor → extract |
+| `POST /vendors/artifacts` | Upload (JSON `raw_text`) → quarantine-scan → Model Armor → extract |
+| `POST /vendors/artifacts/upload` | Same pipeline, but a real file (PDF/DOCX/TXT, multipart) -- text extraction happens at the HTTP edge (`api/document_extraction.py`) before Model Armor ever sees it |
 | `GET /vendors` / `GET /vendors/{id}` | List / fetch, with `blind_window_days` computed live |
 | `GET /vendors/{id}/findings` | Findings for one vendor |
 | `GET /vendors/{id}/contract-terms` | Extracted clauses for one vendor's contract(s), each pre-evaluated against the playbook |
