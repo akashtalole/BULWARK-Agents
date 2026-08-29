@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useApi, ApiError } from "../lib/api";
 import { useSort } from "../lib/sort";
@@ -38,10 +38,17 @@ export default function Findings() {
     queryFn: () => api.listFindings(status || undefined),
   });
 
+  const vendors = useQuery({ queryKey: ["vendors"], queryFn: () => api.listVendors() });
+  const vendorNameById = new Map((vendors.data ?? []).map((v) => [v.vendor_id, v.name]));
+
+  const searchLower = search.toLowerCase();
   const rows = findings.data
     ? sort.apply(
         findings.data.filter(
-          (f) => f.control_ref.toLowerCase().includes(search.toLowerCase()) || f.vendor_id.includes(search),
+          (f) =>
+            f.control_ref.toLowerCase().includes(searchLower) ||
+            f.vendor_id.includes(search) ||
+            (vendorNameById.get(f.vendor_id) ?? "").toLowerCase().includes(searchLower),
         ),
       )
     : [];
@@ -64,7 +71,7 @@ export default function Findings() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Input value={search} onChange={setSearch} placeholder="Search control or vendor id…" className="w-56" />
+          <Input value={search} onChange={setSearch} placeholder="Search control or vendor…" className="w-56" />
           <Select
             value={status}
             onChange={setStatus}
@@ -105,7 +112,13 @@ export default function Findings() {
                   >
                     <Td className="font-medium text-zinc-100">{f.control_ref}</Td>
                     <Td>
-                      <Mono>{f.vendor_id}</Mono>
+                      <Link
+                        to={`/vendors/${f.vendor_id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-zinc-200 hover:text-indigo-400"
+                      >
+                        {vendorNameById.get(f.vendor_id) ?? f.vendor_id}
+                      </Link>
                     </Td>
                     <Td>
                       <Badge tone={toneForFindingStatus(f.status)}>{f.status}</Badge>
@@ -131,7 +144,7 @@ export default function Findings() {
 
         <div className="xl:col-span-2">
           {selected ? (
-            <FindingDetail findingId={selected} onDecided={() => findings.refetch()} />
+            <FindingDetail findingId={selected} vendorNameById={vendorNameById} onDecided={() => findings.refetch()} />
           ) : (
             <Card>
               <EmptyBlock label="Select a finding to see its reasoning chain and record a decision." />
@@ -143,7 +156,15 @@ export default function Findings() {
   );
 }
 
-function FindingDetail({ findingId, onDecided }: { findingId: string; onDecided: () => void }) {
+function FindingDetail({
+  findingId,
+  vendorNameById,
+  onDecided,
+}: {
+  findingId: string;
+  vendorNameById: Map<string, string>;
+  onDecided: () => void;
+}) {
   const api = useApi();
   const qc = useQueryClient();
   const explain = useQuery({ queryKey: ["explain", findingId], queryFn: () => api.explainFinding(findingId) });
@@ -168,7 +189,10 @@ function FindingDetail({ findingId, onDecided }: { findingId: string; onDecided:
   return (
     <div className="space-y-4">
       <Card title={finding.control_ref} subtitle={finding.finding_id}>
-        <div className="flex flex-wrap items-center gap-2">
+        <Link to={`/vendors/${finding.vendor_id}`} className="text-sm text-indigo-400 hover:underline">
+          {vendorNameById.get(finding.vendor_id) ?? finding.vendor_id}
+        </Link>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
           <Badge tone={toneForFindingStatus(finding.status)}>{finding.status}</Badge>
           <Badge tone={finding.residual_risk >= 15 ? "red" : "gray"}>risk {finding.residual_risk}/25</Badge>
           {finding.requires_human && <Badge tone="amber">requires human</Badge>}

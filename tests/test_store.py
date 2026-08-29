@@ -40,3 +40,23 @@ def test_named_database_still_passes_the_database_kwarg(monkeypatch):
     store_module.DocumentStore("vendors")
 
     fake_client_cls.assert_called_once_with(project="test-project", database="bulwark-prod")
+
+
+def test_list_with_ids_pairs_each_doc_with_its_key():
+    store = store_module.DocumentStore("list_with_ids_test")
+    store.set("doc_a", {"n": 1})
+    store.set("doc_b", {"n": 2})
+
+    pairs = dict(store.list_with_ids())
+
+    assert pairs == {"doc_a": {"n": 1}, "doc_b": {"n": 2}}
+
+
+def test_list_with_ids_applies_where_filter():
+    store = store_module.DocumentStore("list_with_ids_filter_test")
+    store.set("keep", {"n": 1})
+    store.set("drop", {"n": 2})
+
+    pairs = dict(store.list_with_ids(where=lambda d: d["n"] == 1))
+
+    assert pairs == {"keep": {"n": 1}}

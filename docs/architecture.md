@@ -386,7 +386,7 @@ auditable data-retention and GDPR/CCPA exposure. `GET
 /vendors/{id}/offboarding` exposes the current record.
 
 **Executive Risk Digest** (`agents/executive_digest.py`): this build's API
-surface grew to 41 routes across five feature areas: nobody clicks
+surface grew to 44 routes across five feature areas: nobody clicks
 through all of them weekly, so an urgent item (a critical-tier gap, a
 newly-detected concentration risk, an overdue offboarding) can sit
 unnoticed for a full review cycle. `gather_digest_inputs` deterministically
@@ -448,6 +448,7 @@ API-key + rate-limit check (`_authorize`).
 | `POST /digest/generate` | Run the Executive Risk Digest Agent now, rather than waiting for the next scheduled run |
 | `GET /digest/latest` | The most recently generated digest |
 | `GET /digest/{id}` | Fetch one digest by id |
+| `GET /traces` | Browse recent trace summaries -- optionally `?vendor_id=` scoped -- instead of needing a trace_id already in hand |
 | `GET /traces/{id}` | Full reasoning-chain audit trail for a trace |
 | `GET /dlq` | Dead-letter queue contents |
 | `GET /fleet-config` / `POST /fleet-config` | Kill switch: read/set autonomy level, pause/resume an agent |

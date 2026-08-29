@@ -350,13 +350,13 @@ classDiagram
 
 ### 2.3 API Layer — Route Groupings
 
-All 38 routes in `api/routes.py`, grouped by resource, and what each
+All 44 routes in `api/routes.py`, grouped by resource, and what each
 group ultimately calls.
 
 ```mermaid
 flowchart LR
     subgraph Fleet["Fleet meta"]
-        R1["GET /healthz"]
+        R1["GET /status"]
         R2["GET /registry"]
         R3["GET /fleet-config\nPOST /fleet-config"]
         R4["GET /fleet/health"]

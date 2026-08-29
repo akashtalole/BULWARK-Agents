@@ -1,0 +1,48 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>
+endobj
+5 0 obj
+<< /Length 1440 >>
+stream
+BT /F1 16 Tf 72 740 Td (Penetration Test Summary -- Sibling Analytics Inc) Tj ET
+BT /F1 10.5 Tf 72 717.6 Td (Independent penetration test of Sibling Analytics Inc's production environment, performed by) Tj ET
+BT /F1 10.5 Tf 72 703.6 Td (a third-party security firm. Scope: external network perimeter, primary web application, and) Tj ET
+BT /F1 10.5 Tf 72 689.6 Td (API surface.) Tj ET
+BT /F1 10.5 Tf 72 675.6 Td () Tj ET
+BT /F1 10.5 Tf 72 661.6 Td (Findings: 0 critical, 1 high, 3 medium, 5 low/informational. The high-severity finding \(a) Tj ET
+BT /F1 10.5 Tf 72 647.6 Td (missing rate limit on an authentication endpoint\) was remediated within 14 days of) Tj ET
+BT /F1 10.5 Tf 72 633.6 Td (disclosure and independently retested as fixed.) Tj ET
+BT /F1 10.5 Tf 72 619.6 Td () Tj ET
+BT /F1 10.5 Tf 72 605.6 Td (Access control testing confirmed: MFA is enforced for all employee access to systems) Tj ET
+BT /F1 10.5 Tf 72 591.6 Td (processing customer data.) Tj ET
+BT /F1 10.5 Tf 72 577.6 Td () Tj ET
+BT /F1 10.5 Tf 72 563.6 Td (Logging coverage observed during the engagement: Logs are retained for 365 days in) Tj ET
+BT /F1 10.5 Tf 72 549.6 Td (accordance with customer contractual commitments.) Tj ET
+BT /F1 10.5 Tf 72 535.6 Td () Tj ET
+BT /F1 10.5 Tf 72 521.6 Td (Full findings detail is available on request under NDA; this summary is the version shared) Tj ET
+BT /F1 10.5 Tf 72 507.6 Td (with customers for vendor risk review.) Tj ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000185 00000 n 
+0000000311 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1803
+%%EOF

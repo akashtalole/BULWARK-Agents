@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useApi, ApiError } from "../lib/api";
 import { useSort } from "../lib/sort";
+import { formatDate } from "../lib/format";
 import type { Vendor } from "../lib/types";
 import {
   Card,
@@ -302,7 +303,15 @@ export default function Vendors() {
                   </Badge>
                 </div>
                 <div className="mt-1 text-zinc-500">status: {submitMutation.data.status}</div>
-                <div className="mt-1 text-zinc-500">trace_id: {submitMutation.data.trace_id}</div>
+                <div className="mt-1 text-zinc-500">
+                  trace_id:{" "}
+                  <Link
+                    to={`/traces?trace=${encodeURIComponent(submitMutation.data.trace_id)}`}
+                    className="text-indigo-400 hover:underline"
+                  >
+                    {submitMutation.data.trace_id}
+                  </Link>
+                </div>
                 {submitMutation.data.summary && (
                   <div className="mt-1 text-zinc-500">{submitMutation.data.summary}</div>
                 )}
@@ -374,7 +383,7 @@ export default function Vendors() {
                       </span>
                     )}
                   </Td>
-                  <Td className="text-zinc-500">{v.last_assessed_at ?? "never"}</Td>
+                  <Td className="text-zinc-500">{v.last_assessed_at ? formatDate(v.last_assessed_at) : "never"}</Td>
                 </Tr>
               ))}
             </tbody>

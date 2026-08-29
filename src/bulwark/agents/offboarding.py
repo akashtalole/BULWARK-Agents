@@ -107,6 +107,7 @@ def initiate_offboarding(vendor_id: str, reason: str, trace_id: str) -> dict:
     audit_log.record(
         agent_name="offboarding-agent", event="offboarding_initiated",
         detail=f"vendor={vendor_id} reason={reason} deadline={deadline}", trace_id=trace_id,
+        vendor_id=vendor_id,
     )
     return {"record_id": record.record_id, "vendor_id": vendor_id, "deadline": deadline}
 
@@ -137,6 +138,7 @@ def confirm_data_deletion(vendor_id: str, evidence_note: str, trace_id: str) -> 
     audit_log.record(
         agent_name="offboarding-agent", event="data_deletion_confirmed",
         detail=f"vendor={vendor_id} evidence={evidence_note}", trace_id=trace_id,
+        vendor_id=vendor_id,
     )
     return {"record_id": record.record_id, "vendor_id": vendor_id, "status": "confirmed"}
 
@@ -167,5 +169,6 @@ def check_offboarding_overdue(trace_id: str | None = None) -> list[dict]:
         audit_log.record(
             agent_name="offboarding-agent", event="offboarding_overdue_detected",
             detail=f"vendor={record.vendor_id} deadline={record.deadline}", trace_id=trace_id,
+            vendor_id=record.vendor_id,
         )
     return signals

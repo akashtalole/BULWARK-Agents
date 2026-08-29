@@ -52,8 +52,8 @@ def client():
     routes.set_orchestration_fns(None, None, None)
 
 
-def test_healthz_is_public(client):
-    assert client.get("/healthz").status_code == 200
+def test_status_is_public(client):
+    assert client.get("/status").status_code == 200
 
 
 def test_registry_requires_api_key(client):
@@ -354,6 +354,30 @@ def test_trace_endpoint_returns_entries_shape(client):
     assert resp.status_code == 200
     assert resp.json()["trace_id"] == "some_trace_id"
     assert "entries" in resp.json()
+
+
+def test_list_traces_requires_api_key(client):
+    assert client.get("/traces").status_code == 401
+
+
+def test_list_traces_returns_vendor_scoped_summary(client):
+    from bulwark.platform.observability import audit_log
+
+    audit_log.record(agent_name="intake", event="agent_started", detail="x", trace_id="trace_list_1", vendor_id="v_list_1")
+    audit_log.record(agent_name="intake", event="agent_finished", detail="x", trace_id="trace_list_1", vendor_id="v_list_1")
+    audit_log.record(agent_name="drift-sentinel", event="drift_sweep_completed", detail="fleet-wide", trace_id="trace_list_2")
+
+    resp = client.get("/traces", headers={"X-API-Key": API_KEY})
+    assert resp.status_code == 200
+    by_id = {t["trace_id"]: t for t in resp.json()}
+    assert by_id["trace_list_1"]["vendor_id"] == "v_list_1"
+    assert by_id["trace_list_1"]["status"] == "completed"
+    assert by_id["trace_list_1"]["event_count"] == 2
+    assert by_id["trace_list_2"]["vendor_id"] is None
+
+    scoped = client.get("/traces", params={"vendor_id": "v_list_1"}, headers={"X-API-Key": API_KEY})
+    scoped_ids = {t["trace_id"] for t in scoped.json()}
+    assert scoped_ids == {"trace_list_1"}
 
 
 def test_register_vendor(client):

@@ -128,6 +128,7 @@ def create_finding(
             event="finding_rejected_missing_citations",
             detail=f"vendor={vendor_id} control={control_ref}: no evidence_ids or assertion_ids supplied",
             trace_id=trace_id,
+            vendor_id=vendor_id,
         )
         return {"error": "citation_validation_failed", "reason": "at least one evidence_id or assertion_id is required"}
 
@@ -143,6 +144,7 @@ def create_finding(
             event="finding_rejected_unknown_citations",
             detail=f"vendor={vendor_id} control={control_ref}: unrecognized ids {unknown}",
             trace_id=trace_id,
+            vendor_id=vendor_id,
         )
         return {"error": "citation_validation_failed", "reason": f"unrecognized citation ids: {unknown}"}
 
@@ -156,6 +158,7 @@ def create_finding(
             event="finding_downgraded_stale_evidence",
             detail=f"vendor={vendor_id} control={control_ref}: cited evidence is stale, status forced satisfied->unknown",
             trace_id=trace_id,
+            vendor_id=vendor_id,
         )
         status = "unknown"
         requires_human = True
@@ -173,6 +176,7 @@ def create_finding(
         audit_log.record(
             agent_name="risk-assessor", event="finding_flagged_for_mandatory_review",
             detail=f"vendor={vendor_id} control={control_ref}: {reason}", trace_id=trace_id,
+            vendor_id=vendor_id,
         )
 
     finding = finding_repo.create(

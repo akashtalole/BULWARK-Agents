@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useApi, ApiError } from "../lib/api";
 import { useSort } from "../lib/sort";
+import { formatDate } from "../lib/format";
 import type { Questionnaire } from "../lib/types";
 import {
   Card,
@@ -132,7 +133,7 @@ export default function Questionnaires() {
               {rows.map((q) => (
                 <Tr key={q.questionnaire_id} onClick={() => navigate(`/questionnaires/${q.questionnaire_id}`)}>
                   <Td className="font-medium text-zinc-100">{q.buyer}</Td>
-                  <Td className="text-zinc-500">{q.received_at}</Td>
+                  <Td className="text-zinc-500">{formatDate(q.received_at)}</Td>
                   <Td>{q.total_questions}</Td>
                   <Td>{q.auto_answered}</Td>
                   <Td>

@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useApi } from "../lib/api";
 import {
   Card,
@@ -131,12 +132,12 @@ export default function Dashboard() {
               <div>Tokens in: {Number(h.spend_today.tokens_in ?? 0).toLocaleString()}</div>
               <div>Tokens out: {Number(h.spend_today.tokens_out ?? 0).toLocaleString()}</div>
             </div>
-            <div className="pt-1">
+            <Link to="/dlq" className="block pt-1 hover:opacity-80">
               <div className="text-xs text-zinc-500">DLQ depth</div>
               <div className={`text-lg font-semibold ${h.dlq_depth > 0 ? "text-amber-400" : "text-zinc-100"}`}>
                 {h.dlq_depth}
               </div>
-            </div>
+            </Link>
           </div>
         </Card>
 
@@ -145,11 +146,13 @@ export default function Dashboard() {
           subtitle="Mandatory HITL gates (section 6.4)"
           className="lg:col-span-1"
         >
-          <StatTile
-            label="Findings requiring human review"
-            value={m.findings_requiring_human_review}
-            tone={m.findings_requiring_human_review > 0 ? "warn" : "good"}
-          />
+          <Link to="/findings" className="block hover:opacity-80">
+            <StatTile
+              label="Findings requiring human review"
+              value={m.findings_requiring_human_review}
+              tone={m.findings_requiring_human_review > 0 ? "warn" : "good"}
+            />
+          </Link>
           <p className="mt-3 text-xs text-zinc-500">{m.note}</p>
         </Card>
       </div>

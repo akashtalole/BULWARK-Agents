@@ -257,11 +257,22 @@ export interface AuditEntry {
   detail: string;
   invocation_id: string | null;
   trace_id: string | null;
+  vendor_id?: string | null;
 }
 
 export interface TraceResponse {
   trace_id: string;
   entries: AuditEntry[];
+}
+
+export interface TraceSummary {
+  trace_id: string;
+  vendor_id: string | null;
+  started_at: string;
+  last_event_at: string;
+  event_count: number;
+  last_event: string;
+  status: "completed" | "running";
 }
 
 export interface DlqEntry {
