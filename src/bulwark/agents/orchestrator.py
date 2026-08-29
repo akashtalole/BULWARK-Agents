@@ -90,10 +90,10 @@ _ROOT_MODEL_FOR_RUNNER = {
 }
 
 
-async def _run(runner: Runner, prompt: str, user_id: str, trace_id: str) -> str:
+async def _run(runner: Runner, prompt: str, user_id: str, trace_id: str, vendor_id: str | None = None) -> str:
     session_id = f"session_{uuid.uuid4().hex[:10]}"
     await _session_service.create_session(
-        app_name=_APP_NAME, user_id=user_id, session_id=session_id, state={"trace_id": trace_id}
+        app_name=_APP_NAME, user_id=user_id, session_id=session_id, state={"trace_id": trace_id, "vendor_id": vendor_id}
     )
     content = types.Content(role="user", parts=[types.Part(text=prompt)])
     final_text = ""
@@ -150,6 +150,7 @@ async def process_vendor_artifact(
         audit_log.record(
             agent_name="vendor-intake", event="artifact_blocked_by_model_armor",
             detail=f"vendor={vendor_name} findings={scan['armor_findings']}", trace_id=trace_id,
+            vendor_id=scan["vendor_id"],
         )
         return {"trace_id": trace_id, "status": "blocked_by_model_armor", **scan}
 
@@ -160,7 +161,7 @@ async def process_vendor_artifact(
         f"New vendor artifact to extract claims from.\nvendor_id: {scan['vendor_id']}\n"
         f"artifact_id: {scan['artifact_id']}\ndoc_type: {doc_type}\n\nDocument text:\n{raw_text}"
     )
-    summary = await _run(_intake_runner, prompt, user_id, trace_id)
+    summary = await _run(_intake_runner, prompt, user_id, trace_id, vendor_id=scan["vendor_id"])
 
     assertion_envelope = Envelope(
         payload={"vendor_id": scan["vendor_id"]},
@@ -177,7 +178,7 @@ async def _process_contract(scan: dict[str, Any], doc_type: str, raw_text: str, 
         f"New vendor contract to review.\nvendor_id: {scan['vendor_id']}\n"
         f"artifact_id: {scan['artifact_id']}\ndoc_type: {doc_type}\n\nDocument text:\n{raw_text}"
     )
-    summary = await _run(_contract_runner, prompt, user_id, trace_id)
+    summary = await _run(_contract_runner, prompt, user_id, trace_id, vendor_id=scan["vendor_id"])
 
     terms_envelope = Envelope(
         payload={"vendor_id": scan["vendor_id"], "artifact_id": scan["artifact_id"]},
@@ -208,7 +209,7 @@ async def _on_assessment_requested(topic: str, envelope: Envelope) -> None:
     vendor_id = envelope.payload["vendor_id"]
     reason = envelope.payload.get("reason", "requested")
     prompt = f"Event: assessment requested for vendor_id={vendor_id}. Reason: {reason}."
-    await _run(_supervisor_runner, prompt, "system", envelope.trace_id)
+    await _run(_supervisor_runner, prompt, "system", envelope.trace_id, vendor_id=vendor_id)
 
     vendor = vendor_repo.get(vendor_id)
     if vendor:
@@ -226,11 +227,12 @@ async def _on_assessment_requested(topic: str, envelope: Envelope) -> None:
 
 async def _on_finding_created(topic: str, envelope: Envelope) -> None:
     finding_id = envelope.payload["finding_id"]
+    finding = finding_repo.get(finding_id)
     prompt = (
         f"Event: a new gap finding was created: finding_id={finding_id}. Open a ticket for it "
         "assigned to 'security-review-queue' and build its decision packet."
     )
-    await _run(_remediation_runner, prompt, "system", envelope.trace_id)
+    await _run(_remediation_runner, prompt, "system", envelope.trace_id, vendor_id=finding.vendor_id if finding else None)
 
 
 bus.subscribe("assertion.extracted", _on_assertion_extracted)

@@ -40,36 +40,51 @@ def compute_framework_coverage(vendor_id: str, target_framework: str) -> dict:
     count as still needing attention, same as they would under direct
     assessment.
 
+    Some target controls have more than one SOC 2 equivalent (e.g. both
+    CC6.8 and CC7.2 crosswalk to ISO 27001's A.12.4.1 -- log retention
+    and security monitoring are both partial evidence for it). Grouping
+    by `target_control` before classifying covered vs. gap matters here:
+    without it, a target control with one satisfied and one unsatisfied
+    mapping would show up in *both* lists -- a contradiction a reviewer
+    would read as a bug, and a target control double-counted in
+    `coverage_pct`'s denominator. One satisfied mapping is enough to call
+    the target control covered.
+
     Returns:
         `{vendor_id, target_framework, covered_controls, gap_controls,
-        coverage_pct}` -- each covered/gap entry cites the SOC 2 control
-        and (for covered ones) the finding_id that justifies the
-        coverage claim, so the result is traceable, not just a number.
+        coverage_pct}` -- each covered/gap entry cites the SOC 2
+        control(s) and (for covered ones) the finding_id that justifies
+        the coverage claim, so the result is traceable, not just a number.
     """
     identity.require_grant("framework-crosswalk", "findings:read")
     policy.enforce_autonomy("framework-crosswalk", 3)  # L3: read-only cross-referencing of the fleet's own output
 
     satisfied_by_control = {f.control_ref: f for f in finding_repo.list_for_vendor(vendor_id) if f.status == "satisfied"}
 
-    covered: list[dict] = []
-    gaps: list[dict] = []
+    mappings_by_target: dict[str, list[str]] = {}
     for soc2_ref, targets in CROSSWALK.items():
         target_ref = targets.get(target_framework)
         if target_ref is None:
             continue
-        if soc2_ref in satisfied_by_control:
+        mappings_by_target.setdefault(target_ref, []).append(soc2_ref)
+
+    covered: list[dict] = []
+    gaps: list[dict] = []
+    for target_ref, soc2_refs in mappings_by_target.items():
+        satisfied_ref = next((ref for ref in soc2_refs if ref in satisfied_by_control), None)
+        if satisfied_ref:
             covered.append(
                 {
                     "target_control": target_ref,
-                    "via_soc2_control": soc2_ref,
-                    "source_finding_id": satisfied_by_control[soc2_ref].finding_id,
+                    "via_soc2_control": satisfied_ref,
+                    "source_finding_id": satisfied_by_control[satisfied_ref].finding_id,
                 }
             )
         else:
             gaps.append(
                 {
                     "target_control": target_ref,
-                    "via_soc2_control": soc2_ref,
+                    "via_soc2_control": " / ".join(soc2_refs),
                     "reason": "no satisfied SOC 2 finding yet for the equivalent control",
                 }
             )

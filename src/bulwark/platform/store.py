@@ -100,6 +100,19 @@ class DocumentStore:
                 docs = [copy.deepcopy(doc) for doc in self._memory.values()]
         return [d for d in docs if where(d)] if where else docs
 
+    def list_with_ids(
+        self, where: Callable[[dict[str, Any]], bool] | None = None
+    ) -> list[tuple[str, dict[str, Any]]]:
+        """Same as `list`, but pairs each document with its id -- for
+        collections (like the audit log) keyed by an id that isn't also
+        carried as a field on the document itself."""
+        if self.is_firestore:
+            pairs = [(doc.id, doc.to_dict()) for doc in self._client.collection(self.collection_name).stream()]
+        else:
+            with self._lock:
+                pairs = [(doc_id, copy.deepcopy(doc)) for doc_id, doc in self._memory.items()]
+        return [(i, d) for i, d in pairs if where(d)] if where else pairs
+
     def delete(self, doc_id: str) -> None:
         if self.is_firestore:
             self._client.collection(self.collection_name).document(doc_id).delete()

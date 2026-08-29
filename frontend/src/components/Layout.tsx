@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import {
@@ -140,7 +140,9 @@ export default function Layout() {
               {autonomyLabel}
             </Badge>
             {health.data && health.data.dlq_depth > 0 && (
-              <Badge tone="amber">{health.data.dlq_depth} in DLQ</Badge>
+              <Link to="/dlq">
+                <Badge tone="amber">{health.data.dlq_depth} in DLQ</Badge>
+              </Link>
             )}
             <button
               onClick={toggleTheme}

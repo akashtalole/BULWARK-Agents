@@ -1,12 +1,15 @@
+import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useApi, ApiError } from "../lib/api";
-import { Card, Badge, Button, LoadingBlock, ErrorBlock, EmptyBlock, Mono, toneForRisk } from "../components/ui";
+import { Card, Badge, Button, LoadingBlock, ErrorBlock, EmptyBlock, toneForRisk } from "../components/ui";
 import { RefreshCw, Network } from "lucide-react";
 
 export default function Concentration() {
   const api = useApi();
   const qc = useQueryClient();
   const risks = useQuery({ queryKey: ["concentration-risks"], queryFn: () => api.listConcentrationRisks() });
+  const vendors = useQuery({ queryKey: ["vendors"], queryFn: () => api.listVendors() });
+  const vendorNameById = new Map((vendors.data ?? []).map((v) => [v.vendor_id, v.name]));
 
   const tick = useMutation({
     mutationFn: () => api.tickConcentrationAnalyzer(),
@@ -58,7 +61,13 @@ export default function Concentration() {
             </div>
             <div className="mt-2 flex flex-wrap gap-1">
               {r.vendor_ids.map((v) => (
-                <Mono key={v}>{v}</Mono>
+                <Link
+                  key={v}
+                  to={`/vendors/${v}`}
+                  className="rounded bg-zinc-800 px-2 py-0.5 text-xs text-zinc-300 hover:bg-zinc-700 hover:text-indigo-400"
+                >
+                  {vendorNameById.get(v) ?? v}
+                </Link>
               ))}
             </div>
           </Card>

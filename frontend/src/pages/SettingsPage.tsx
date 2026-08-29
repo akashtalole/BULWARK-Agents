@@ -11,8 +11,8 @@ export default function SettingsPage() {
   const api = useApi();
 
   const health = useQuery({
-    queryKey: ["healthz-check", baseUrl, apiKey],
-    queryFn: () => api.healthz(),
+    queryKey: ["status-check", baseUrl, apiKey],
+    queryFn: () => api.getStatus(),
     retry: false,
   });
 
@@ -65,7 +65,7 @@ export default function SettingsPage() {
       <Card title="Diagnostics">
         <div className="space-y-2 text-sm">
           <div className="flex items-center justify-between">
-            <span className="text-zinc-400">GET /healthz</span>
+            <span className="text-zinc-400">GET /status</span>
             {health.isLoading && <span className="text-zinc-600">checking…</span>}
             {health.isSuccess && <Badge tone="green">{health.data.status}</Badge>}
             {health.isError && <Badge tone="red">failed</Badge>}

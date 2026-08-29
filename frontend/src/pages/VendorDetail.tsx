@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useApi, ApiError } from "../lib/api";
+import { formatDate } from "../lib/format";
 import {
   Card,
   Table,
@@ -82,17 +83,25 @@ export default function VendorDetail() {
                 {v.blind_window_days ?? "—"}d
               </span>
             </span>
-            <span>Last assessed: {v.last_assessed_at ?? "never"}</span>
+            <span>Last assessed: {v.last_assessed_at ? formatDate(v.last_assessed_at) : "never"}</span>
           </div>
         </div>
-        <Button variant="primary" disabled={assess.isPending} onClick={() => assess.mutate()}>
-          {assess.isPending ? "Triggering…" : "Trigger assessment"}
-        </Button>
+        <div className="flex gap-2">
+          <Link to={`/traces?vendor=${encodeURIComponent(v.vendor_id)}`}>
+            <Button variant="ghost">View traces</Button>
+          </Link>
+          <Button variant="primary" disabled={assess.isPending} onClick={() => assess.mutate()}>
+            {assess.isPending ? "Triggering…" : "Trigger assessment"}
+          </Button>
+        </div>
       </div>
       {assess.isError && <ErrorBlock message={(assess.error as ApiError).message} />}
       {assess.isSuccess && (
         <div className="text-xs text-zinc-500">
-          Requested — <Link to="/traces" className="text-indigo-400 hover:underline">trace {assess.data.trace_id}</Link>
+          Requested —{" "}
+          <Link to={`/traces?trace=${encodeURIComponent(assess.data.trace_id)}`} className="text-indigo-400 hover:underline">
+            trace {assess.data.trace_id}
+          </Link>
         </div>
       )}
 

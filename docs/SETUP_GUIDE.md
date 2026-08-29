@@ -90,7 +90,7 @@ store, its writes land in a store the running server never reads from.
 PYTHONPATH=src pytest -q
 ```
 
-146 tests, none requiring live Gemini credentials -- every deterministic
+195 tests, none requiring live Gemini credentials -- every deterministic
 piece (guardrails, citation validation, the autonomy ladder, event-bus
 DLQ/idempotency, the circuit breaker, rollback, the crosswalk lookup,
 risk-trend detection, offboarding-deadline tracking) is exercised
@@ -263,7 +263,7 @@ Override any of these via env vars before running either script:
 ```bash
 SERVICE_URL=$(gcloud run services describe bulwark --region "$REGION" --format='value(status.url)')
 
-curl -s "$SERVICE_URL/healthz"                                            # public, no API key needed
+curl -s "$SERVICE_URL/status"                                            # public, no API key needed
 curl -s -H "X-API-Key: demo-key" "$SERVICE_URL/registry" | jq             # confirms all 12 agents registered
 curl -s -H "X-API-Key: demo-key" -X POST "$SERVICE_URL/evidence-collector/tick" | jq   # deterministic, proves the service is actually running
 ```

@@ -189,6 +189,7 @@ async def reopen_assessment(vendor_id: str, reason: str, severity: str, trace_id
     audit_log.record(
         agent_name="drift-sentinel", event="assessment_reopened",
         detail=f"vendor={vendor_id} severity={severity} reason={reason}", trace_id=trace_id,
+        vendor_id=vendor_id,
     )
 
     envelope = Envelope(

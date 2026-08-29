@@ -20,6 +20,7 @@ import type {
   SubmitArtifactResponse,
   SubmitQuestionnaireResponse,
   TraceResponse,
+  TraceSummary,
   Vendor,
 } from "./types";
 
@@ -84,8 +85,8 @@ export class BulwarkClient {
     return this.request<T>(path, { method: "PATCH", body: body !== undefined ? JSON.stringify(body) : undefined });
   }
 
-  healthz(): Promise<{ status: string }> {
-    return this.get("/healthz");
+  getStatus(): Promise<{ status: string }> {
+    return this.get("/status");
   }
 
   // ----------------------------------------------------------------- auth
@@ -248,6 +249,10 @@ export class BulwarkClient {
   }
 
   // --------------------------------------------------------- observability
+  listTraces(vendorId?: string): Promise<TraceSummary[]> {
+    return this.get(`/traces${vendorId ? `?vendor_id=${encodeURIComponent(vendorId)}` : ""}`);
+  }
+
   getTrace(traceId: string): Promise<TraceResponse> {
     return this.get(`/traces/${traceId}`);
   }

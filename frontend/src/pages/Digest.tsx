@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useApi, ApiError } from "../lib/api";
 import { Card, Button, Badge, LoadingBlock, ErrorBlock, Mono } from "../components/ui";
+import { formatDate } from "../lib/format";
 import { Sparkles, ChevronDown, ChevronRight } from "lucide-react";
 
 export default function Digest() {
@@ -26,7 +27,7 @@ export default function Digest() {
         <div>
           <h1 className="text-xl font-semibold text-zinc-100">Executive Risk Digest</h1>
           <p className="mt-1 text-sm text-zinc-500">
-            The fleet's 38 endpoints of state, turned into a short narrative — grounded only in
+            The fleet's 44 endpoints of state, turned into a short narrative — grounded only in
             what's shown below.
           </p>
         </div>
@@ -50,7 +51,7 @@ export default function Digest() {
         <>
           <Card
             title="Latest digest"
-            subtitle={`generated ${latest.data.generated_at} · trace ${latest.data.trace_id}`}
+            subtitle={`generated ${formatDate(latest.data.generated_at)} · trace ${latest.data.trace_id}`}
           >
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-200">
               {latest.data.narrative}

@@ -76,7 +76,7 @@ def open_ticket(finding_id: str, assignee: str, summary: str) -> dict:
     audit_log.record(
         agent_name="remediation-router", event="ticket_opened",
         detail=f"ticket={ticket.ticket_id} finding={finding_id} assignee={assignee}",
-        trace_id=trace_id,
+        trace_id=trace_id, vendor_id=finding.vendor_id if finding else None,
     )
     return {"ticket_id": ticket.ticket_id}
 
@@ -133,6 +133,7 @@ def draft_vendor_email(finding_id: str, recipient_email: str, subject: str, body
         audit_log.record(
             agent_name="remediation-router", event="vendor_email_blocked_no_human_decision",
             detail=f"finding={finding_id}: refused to draft, no human_decision recorded", trace_id=finding.trace_id,
+            vendor_id=finding.vendor_id,
         )
         return {
             "error": "human_decision_required",
@@ -155,6 +156,7 @@ def draft_vendor_email(finding_id: str, recipient_email: str, subject: str, body
     audit_log.record(
         agent_name="remediation-router", event="vendor_email_drafted",
         detail=f"draft={draft_id} finding={finding_id} recipient={recipient_email}", trace_id=finding.trace_id,
+        vendor_id=finding.vendor_id,
     )
     return {"draft_id": draft_id, "status": "drafted_pending_manual_send"}
 

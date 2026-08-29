@@ -41,6 +41,15 @@ from bulwark.platform.observability import audit_log
 from bulwark.platform.policy import AUTONOMY_LEVELS
 
 
+def _vendor_name(vendor_id: str) -> str:
+    """Findings/OffboardingRecords only carry `vendor_id` -- resolve it
+    to the vendor's actual name here so the digest's narrative (and its
+    `inputs` JSON, which the UI's "grounding inputs" panel renders
+    verbatim) reads "Cloudy SaaS Inc", not "vendor_1f8395599f"."""
+    vendor = vendor_repo.get(vendor_id)
+    return vendor.name if vendor else vendor_id
+
+
 def gather_digest_inputs() -> dict:
     """Pull the "needs a human's attention" slice of the fleet's current
     state -- deliberately not the full `/metrics` dashboard, which is
@@ -81,11 +90,22 @@ def gather_digest_inputs() -> dict:
         "fleet_autonomy_level": f"L{config.autonomy_level} ({AUTONOMY_LEVELS[config.autonomy_level]})",
         "paused_agents": config.paused_agents,
         "critical_vendor_gap_findings": [
-            {"vendor_id": f.vendor_id, "control_ref": f.control_ref, "residual_risk": f.residual_risk, "gap_description": f.gap_description}
+            {
+                "vendor_id": f.vendor_id,
+                "vendor_name": _vendor_name(f.vendor_id),
+                "control_ref": f.control_ref,
+                "residual_risk": f.residual_risk,
+                "gap_description": f.gap_description,
+            }
             for f in critical_vendor_gaps
         ],
         "top_gap_findings": [
-            {"vendor_id": f.vendor_id, "control_ref": f.control_ref, "residual_risk": f.residual_risk}
+            {
+                "vendor_id": f.vendor_id,
+                "vendor_name": _vendor_name(f.vendor_id),
+                "control_ref": f.control_ref,
+                "residual_risk": f.residual_risk,
+            }
             for f in top_gap_findings
         ],
         "concentration_risks": [
@@ -93,7 +113,7 @@ def gather_digest_inputs() -> dict:
             for r in concentration_risks
         ],
         "offboarding_overdue": [
-            {"vendor_id": r.vendor_id, "deadline": r.deadline, "reason": r.reason}
+            {"vendor_id": r.vendor_id, "vendor_name": _vendor_name(r.vendor_id), "deadline": r.deadline, "reason": r.reason}
             for r in offboarding_overdue
         ],
     }
@@ -135,7 +155,9 @@ executive_digest_agent = LlmAgent(
     description="Turns the fleet's current findings, concentration risks, and offboarding state into a short executive-readable narrative.",
     instruction=(
         "You are the Executive Risk Digest for a third-party risk fleet. Call "
-        "`gather_digest_inputs` once. Write a short digest (3-5 short paragraphs, no "
+        "`gather_digest_inputs` once. Refer to vendors by their `vendor_name`, never by "
+        "`vendor_id` -- an executive reading this has no idea what 'vendor_1f8395599f' is. "
+        "Write a short digest (3-5 short paragraphs, no "
         "headers) a busy executive can read in under a minute: lead with whatever is "
         "most urgent (critical-tier vendors with unreviewed gap findings, overdue "
         "offboarding data-deletion deadlines, and newly-detected concentration risks are "

@@ -26,7 +26,7 @@ def stub_run(monkeypatch):
     Remediation Router opening a ticket for it."""
     calls = []
 
-    async def fake_run(runner, prompt, user_id, trace_id):
+    async def fake_run(runner, prompt, user_id, trace_id, vendor_id=None):
         calls.append((runner, prompt))
         if runner is orchestrator._supervisor_runner and "assessment requested" in prompt:
             vendor_id = prompt.split("vendor_id=")[1].split(".")[0].strip()
@@ -166,7 +166,7 @@ async def test_dpa_artifact_routes_to_contract_intelligence_and_triggers_concent
                      artifact_id="art_wiring_existing", name="Shared Cloud Region", purpose="hosting", location="USA")
     )
 
-    async def fake_run(runner, prompt, user_id, trace_id):
+    async def fake_run(runner, prompt, user_id, trace_id, vendor_id=None):
         assert runner is orchestrator._contract_runner
         vendor_id = prompt.split("vendor_id: ")[1].split("\n")[0]
         artifact_id = prompt.split("artifact_id: ")[1].split("\n")[0]

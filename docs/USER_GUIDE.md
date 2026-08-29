@@ -9,7 +9,7 @@ instance running yet, see [`SETUP_GUIDE.md`](SETUP_GUIDE.md) first. For
 All examples assume a local instance at `http://localhost:8080` with the
 default API key `demo-key` and Gemini credentials configured (some
 sections work with zero credentials -- called out explicitly where they
-do). Every request needs an `X-API-Key` header except `GET /healthz`.
+do). Every request needs an `X-API-Key` header except `GET /status`.
 
 ## Contents
 
@@ -540,7 +540,7 @@ zero Gemini credentials; 🔑 = returns `503` without them.
 
 | Method & path | Needs creds | Purpose |
 |---|---|---|
-| `GET /healthz` | ✅ (public, no API key) | Liveness check |
+| `GET /status` | ✅ (public, no API key) | Liveness check |
 | `GET /registry` | ✅ | List all 12 registered agents |
 | `POST /vendors` | ✅ | Register a vendor / set tier up front |
 | `POST /vendors/artifacts` | 🔑 | Submit a compliance doc or contract (JSON `raw_text`); routes automatically by `doc_type` |
@@ -573,6 +573,7 @@ zero Gemini credentials; 🔑 = returns `503` without them.
 | `POST /digest/generate` | 🔑 | Run the Executive Risk Digest Agent now |
 | `GET /digest/latest` | ✅ | Most recently generated digest |
 | `GET /digest/{id}` | ✅ | Fetch one digest by id |
+| `GET /traces` | ✅ | Browse recent trace summaries, optionally `?vendor_id=` scoped |
 | `GET /traces/{id}` | ✅ | Full reasoning-chain audit trail |
 | `GET /dlq` | ✅ | Dead-letter queue contents |
 | `GET /fleet-config` | ✅ | Current autonomy level + paused agents |
@@ -602,7 +603,8 @@ Concentration Analyzer via the `subprocessors.extracted` event; check
 
 **"Something looks wrong -- pause the fleet and investigate."** --
 `POST /fleet-config {"autonomy_level": 0}` stops every agent's next
-action fleet-wide; `GET /traces/{trace_id}` and `GET
+action fleet-wide; `GET /traces?vendor_id={id}` to find the relevant
+trace_id without already having it in hand, then `GET /traces/{trace_id}` and `GET
 /findings/{id}/explain` for the specific decision(s) in question; `POST
 /runs/{trace_id}/rollback` if something already-executed needs undoing;
 `POST /fleet-config {"autonomy_level": 3}` once resolved.

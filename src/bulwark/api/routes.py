@@ -78,8 +78,16 @@ def _authorize(api_key: str | None) -> str:
         raise HTTPException(status_code=429, detail=str(exc)) from exc
 
 
-@router.get("/healthz")
-async def healthz() -> dict:
+@router.get("/status")
+async def get_status() -> dict:
+    """Liveness check. Deliberately not named `/healthz` -- confirmed on
+    the live Cloud Run deployment that Google's own front-end
+    infrastructure intercepts that exact path and returns its own
+    generic 404 page before the request ever reaches this app (every
+    other path, including a genuinely nonexistent one, correctly gets
+    this app's own response) -- a well-known convention-name collision,
+    not anything this app's code was doing wrong. `/status` sidesteps
+    it entirely."""
     return {"status": "ok"}
 
 
@@ -605,6 +613,20 @@ async def list_concentration_risks(x_api_key: str | None = Header(default=None))
 
 
 # ------------------------------------------------------------- observability
+
+
+@router.get("/traces")
+async def list_traces(
+    vendor_id: str | None = None, limit: int = 100, x_api_key: str | None = Header(default=None)
+) -> list[dict]:
+    """Browse recent traces instead of needing a trace_id already in
+    hand -- optionally scoped to one vendor. Each summary's `vendor_id`
+    is best-effort: set when every entry in that trace agrees on a
+    single vendor (the common case for an artifact submission or a
+    manual assessment trigger), and `None` for a fleet-wide trace (a
+    drift sweep, a digest run) that touches many vendors or none."""
+    _authorize(x_api_key)
+    return audit_log.list_traces(vendor_id=vendor_id, limit=limit)
 
 
 @router.get("/traces/{trace_id}")

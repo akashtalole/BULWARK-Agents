@@ -564,6 +564,27 @@ def test_compute_framework_coverage_reports_covered_and_gap_controls():
     assert 0.0 < result["coverage_pct"] < 100.0
 
 
+def test_compute_framework_coverage_never_double_lists_a_shared_target_control():
+    """ISO 27001's A.12.4.1 has two SOC 2 equivalents (CC6.8 and CC7.2).
+    Satisfying just one of them must mark A.12.4.1 covered -- not leave
+    it sitting in both `covered_controls` (via the satisfied one) and
+    `gap_controls` (via the unsatisfied one), which is what a live
+    deployment was observed doing before this fix (found via a UX
+    review of the running app)."""
+    vendor = vendor_repo.get_or_create("acme-eu", "Shared Target Co")
+    scan = prescan_artifact(vendor.name, "SOC2", "We monitor for security events continuously.", "gs://q/shared.pdf", f"sha_shared_{vendor.vendor_id}")
+    asrt = emit_assertion(scan["vendor_id"], scan["artifact_id"], "CC7.2", "Continuous monitoring", 1, 0.9)
+    create_finding(vendor.vendor_id, "CC7.2", "satisfied", "", 2, [], [asrt["assertion_id"]], "trace_shared", _CHOSEN_SATISFIED)
+    # CC6.8 (the other SOC 2 equivalent of A.12.4.1) is never assessed for this vendor.
+
+    result = compute_framework_coverage(vendor.vendor_id, "ISO27001")
+
+    covered_targets = {c["target_control"] for c in result["covered_controls"]}
+    gap_targets = {g["target_control"] for g in result["gap_controls"]}
+    assert "A.12.4.1" in covered_targets
+    assert "A.12.4.1" not in gap_targets  # not also listed as a gap via the unsatisfied CC6.8 mapping
+
+
 def test_compute_framework_coverage_zero_for_unknown_target_framework():
     vendor = vendor_repo.get_or_create("acme-eu", "No Crosswalk Co")
     result = compute_framework_coverage(vendor.vendor_id, "PCIDSS")
@@ -718,6 +739,13 @@ def test_gather_digest_inputs_surfaces_critical_vendor_gaps_and_overdue_offboard
 
     assert any(g["vendor_id"] == vendor.vendor_id for g in inputs["critical_vendor_gap_findings"])
     assert any(o["vendor_id"] == "vendor_digest_other_co" for o in inputs["offboarding_overdue"])
+
+    # Every vendor-scoped entry carries a resolved vendor_name too -- not
+    # just vendor_id -- so the LLM-written narrative can say "Digest
+    # Critical Co", not "vendor_xxxxx" (see agents/executive_digest.py's
+    # _vendor_name).
+    gap = next(g for g in inputs["critical_vendor_gap_findings"] if g["vendor_id"] == vendor.vendor_id)
+    assert gap["vendor_name"] == "Digest Critical Co"
     assert "fleet_autonomy_level" in inputs
     assert inputs["vendor_count"] >= 1
 

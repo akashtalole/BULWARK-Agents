@@ -43,6 +43,7 @@ class AuditEntry:
     detail: str
     invocation_id: str | None = None
     trace_id: str | None = None
+    vendor_id: str | None = None
 
 
 class AuditLog:
@@ -57,10 +58,11 @@ class AuditLog:
         detail: str,
         invocation_id: str | None = None,
         trace_id: str | None = None,
+        vendor_id: str | None = None,
     ) -> AuditEntry:
         entry = AuditEntry(
             entry_id=uuid.uuid4().hex[:12], ts=_now(), agent_name=agent_name, event=event, detail=detail,
-            invocation_id=invocation_id, trace_id=trace_id,
+            invocation_id=invocation_id, trace_id=trace_id, vendor_id=vendor_id,
         )
         key = trace_id or "_unscoped"
         self._store.append_to_list_field(key, "entries", asdict(entry))
@@ -80,6 +82,39 @@ class AuditLog:
             total += sum(1 for e in doc.get("entries", []) if e["event"].startswith(event_prefix))
         return total
 
+    def list_traces(self, vendor_id: str | None = None, limit: int = 100) -> list[dict[str, Any]]:
+        """Trace summaries for browsing, newest-activity-first -- the
+        Traces UI's "pick from recent traces" list, optionally scoped to
+        one vendor. `vendor_id` on each entry comes from the ADK session
+        state (see agents/orchestrator.py's `_run`) for LLM-backed agent
+        calls, or is passed directly for the deterministic agents that
+        already have it in scope; a trace with no vendor-tagged entry at
+        all (a fleet-wide sweep, a buyer questionnaire) reports
+        vendor_id=None rather than guessing."""
+        summaries = []
+        for tid, doc in self._store.list_with_ids():
+            if tid == "_unscoped":
+                continue
+            entries = sorted(doc.get("entries", []), key=lambda e: e["ts"])
+            if not entries:
+                continue
+            vendor_ids = {e["vendor_id"] for e in entries if e.get("vendor_id")}
+            if vendor_id and vendor_id not in vendor_ids:
+                continue
+            summaries.append(
+                {
+                    "trace_id": tid,
+                    "vendor_id": next(iter(vendor_ids)) if len(vendor_ids) == 1 else None,
+                    "started_at": entries[0]["ts"],
+                    "last_event_at": entries[-1]["ts"],
+                    "event_count": len(entries),
+                    "last_event": entries[-1]["event"],
+                    "status": "completed" if any(e["event"] == "agent_finished" for e in entries) else "running",
+                }
+            )
+        summaries.sort(key=lambda s: s["last_event_at"], reverse=True)
+        return summaries[:limit]
+
 
 audit_log = AuditLog()
 
@@ -98,6 +133,7 @@ class ObservabilityPlugin(BasePlugin):
             detail=f"invocation_id={callback_context.invocation_id}",
             invocation_id=callback_context.invocation_id,
             trace_id=callback_context.state.get("trace_id"),
+            vendor_id=callback_context.state.get("vendor_id"),
         )
         return None
 
@@ -111,6 +147,7 @@ class ObservabilityPlugin(BasePlugin):
             detail=f"invocation_id={callback_context.invocation_id}",
             invocation_id=callback_context.invocation_id,
             trace_id=callback_context.state.get("trace_id"),
+            vendor_id=callback_context.state.get("vendor_id"),
         )
         return None
 
@@ -121,6 +158,7 @@ class ObservabilityPlugin(BasePlugin):
             detail=f"tool={tool.name} args={tool_args}",
             invocation_id=tool_context.invocation_id,
             trace_id=tool_context.state.get("trace_id"),
+            vendor_id=tool_context.state.get("vendor_id"),
         )
         return None
 
@@ -131,6 +169,7 @@ class ObservabilityPlugin(BasePlugin):
             detail=f"tool={tool.name} result={result}",
             invocation_id=tool_context.invocation_id,
             trace_id=tool_context.state.get("trace_id"),
+            vendor_id=tool_context.state.get("vendor_id"),
         )
         return None
 
@@ -141,6 +180,7 @@ class ObservabilityPlugin(BasePlugin):
             detail=f"tool={tool.name} error={error}",
             invocation_id=tool_context.invocation_id,
             trace_id=tool_context.state.get("trace_id"),
+            vendor_id=tool_context.state.get("vendor_id"),
         )
         return None
 
