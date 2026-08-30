@@ -13,6 +13,7 @@ nav:
   - Diagrams: DIAGRAMS.md
   - Setup Guide: SETUP_GUIDE.md
   - User Guide: USER_GUIDE.md
+  - Testing Guide: TESTING_GUIDE.md
 
 theme:
   name: material
