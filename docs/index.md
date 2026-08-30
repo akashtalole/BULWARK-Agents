@@ -20,7 +20,7 @@ enterprises repeat across every overlapping compliance framework they
 carry, the **Offboarding Agent** operationalizes the DPA-mandated
 data-deletion deadline every vendor termination creates -- an obligation
 that otherwise lives in a spreadsheet, if it's tracked at all --
-**Executive Risk Digest** synthesizes the fleet's 38 API endpoints of
+**Executive Risk Digest** synthesizes the fleet's 44 API endpoints of
 state into a short prioritized narrative a busy executive can actually
 read, and Drift Sentinel's new `risk_trend_rising` signal catches a
 control's risk climbing across reassessments *before* it becomes a hard

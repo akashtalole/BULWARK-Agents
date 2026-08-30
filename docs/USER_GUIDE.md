@@ -497,7 +497,7 @@ wouldn't un-delete it.
 ## 13. The executive risk digest
 
 **Requires Gemini credentials for the narrative step** -- gathering the
-inputs it's grounded in is deterministic. With 41 API endpoints across
+inputs it's grounded in is deterministic. With 44 API endpoints across
 five feature areas, nobody has time to click through all of them every
 week. Generate a digest on demand instead of waiting for the scheduled
 cadence:

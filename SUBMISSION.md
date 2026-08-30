@@ -72,7 +72,7 @@ track, that runs continuous third-party assurance in both directions:
   data-retention exposure that otherwise lives in a spreadsheet, if it's
   tracked at all.
 - **Summarizing the fleet for someone with two minutes, not twenty.**
-  Executive Risk Digest turns the fleet's 41 API endpoints of state into
+  Executive Risk Digest turns the fleet's 44 API endpoints of state into
   a short, prioritized narrative grounded only in the week's actual
   urgent items -- critical-tier gaps, top findings, concentration risks,
   overdue offboardings.
